@@ -1,0 +1,362 @@
+devices:
+  handler:
+    device:
+      name: Tesla BLE to MQTT
+      manufacturer: 'tb2m'
+      model: 'tb2m'
+      sw_version: "`tb2m_version`"
+      configuration_url: "`tb2m_configuration_url`"
+      identifiers:
+        - tb2m
+    origin:
+      name: tb2m
+      support_url: https://github.com/Lenart12/TeslaBle2Mqtt
+      sw_version: "`tb2m_version`"
+    availability_topic: "`mqtt_prefix`/status"
+    components:
+      uptime:
+        unique_id: "`mqtt_prefix`_uptime"
+        platform: sensor
+        name: Uptime
+        unit_of_measurement: s
+        device_class: duration
+        state_topic: "`mqtt_prefix`/tb2m/uptime/state"
+        entity_category: diagnostic
+        __get_state: "uptime"
+      __presence_template:
+        unique_id: "`vin`_presence"
+        name: "`vin` Presence"
+        platform: binary_sensor
+        device_class: presence
+        state_topic: "`mqtt_prefix`/`vin`/presence/state"
+        icon: mdi:car
+        # __get_state: is handled explicitly in code because it is synced with availability
+
+  per_vehicle:
+    device:
+      name: "Tesla Model `vehicle_model`"
+      serial_number: "`vin`"
+      manufacturer: Tesla
+      model: "Model `vehicle_model`"
+      via_device: tb2m
+      identifiers:
+        - "`mqtt_prefix`_`vin`"
+    origin:
+      name: tb2m
+      support_url: https://github.com/Lenart12/TeslaBle2Mqtt
+      sw_version: "`tb2m_version`"
+    availability_topic: "`mqtt_prefix`/`vin`/status"
+    components:
+    # Controls
+      # Charge port
+      charge_port_door:
+        unique_id: "`vin`_charge_port_door"
+        platform: cover
+        name: Charge port door
+        device_class: door
+        state_topic: "`mqtt_prefix`/`vin`/charge_port_door/state"
+        value_template: "{{ 'open' if value | bool else 'closed' }}"
+        command_topic: "`mqtt_prefix`/`vin`/charge_port_door/set"
+        icon: mdi:ev-plug-ccs2
+        __get_state: "vehicle_data.charge_state.charge_port_door_open"
+        __command/OPEN: charge_port_door_open
+        __command/CLOSE: charge_port_door_close
+      charge_port_unlock:
+        unique_id: "`vin`_charge_port_unlock"
+        platform: button
+        name: Charge port unlock
+        icon: mdi:ev-plug-ccs2
+        command_topic: "`mqtt_prefix`/`vin`/charge_port_door/set"
+        # __command/PRESS: handled from charge_port_door
+      # Charger
+      charger_enabled:
+        unique_id: "`vin`_charge_enable"
+        platform: switch
+        name: Charger
+        state_topic: "`mqtt_prefix`/`vin`/charge_enable/state"
+        value_template: "{{ 'ON' if value | bool else 'OFF' }}"
+        command_topic: "`mqtt_prefix`/`vin`/charge_enable/set"
+        icon: mdi:ev-station
+        __get_state: "vehicle_data.charge_state.charge_enable_request"
+        __command/ON: charge_start
+        __command/OFF: charge_stop
+      # Charging current
+      charging_amps:
+        unique_id: "`vin`_charging_amps"
+        platform: number
+        name: Charging current
+        min: 5
+        max: 16
+        unit_of_measurement: A
+        state_topic: "`mqtt_prefix`/`vin`/charging_amps/state"
+        command_topic: "`mqtt_prefix`/`vin`/charging_amps/set"
+        icon: mdi:ev-station
+        __get_state: "vehicle_data.charge_state.charge_current_request"
+        __command/*: set_charging_amps|{"charging_amps":`*`}
+      # Charging limit
+      charging_limit:
+        unique_id: "`vin`_charging_limit"
+        platform: number
+        name: Charging limit
+        min: 50
+        max: 100
+        unit_of_measurement: "%"
+        state_topic: "`mqtt_prefix`/`vin`/charging_limit/state"
+        command_topic: "`mqtt_prefix`/`vin`/charging_limit/set"
+        icon: mdi:ev-station
+        __get_state: "vehicle_data.charge_state.charge_limit_soc"
+        __command/*: set_charge_limit|{"percent":`*`}
+      # Climate on/off
+      # Climate temp
+      # Flash lights
+      flash_lights:
+        unique_id: "`vin`_flash_lights"
+        platform: button
+        name: Flash lights
+        icon: mdi:car-light-high
+        command_topic: "`mqtt_prefix`/`vin`/flash_lights/set"
+        __command/PRESS: flash_lights
+      # Heated seats front left
+      # Heated seats front right
+      # Honk horn
+      honk_horn:
+        unique_id: "`vin`_honk_horn"
+        platform: button
+        name: Honk horn
+        icon: mdi:bugle
+        command_topic: "`mqtt_prefix`/`vin`/honk_horn/set"
+        __command/PRESS: honk_horn
+      # Lock/unlock
+      door_lock:
+        unique_id: "`vin`_door_lock"
+        platform: lock
+        name: Door lock
+        # state_topic: "`mqtt_prefix`/`vin`/door_lock/state"
+        command_topic: "`mqtt_prefix`/`vin`/door_lock/set"
+        icon: mdi:lock
+        # __get_state: "vehicle_data.vehicle_state.locked" TODO: body controller state
+        __command/LOCK: door_lock
+        __command/UNLOCK: door_unlock
+      # Open/close frunk
+      # Open/close trunk
+      # Open/close windows
+      # Remote start
+      remote_drive:
+        unique_id: "`vin`_remote_drive"
+        platform: button
+        name: Remote drive
+        icon: mdi:car-key
+        command_topic: "`mqtt_prefix`/`vin`/remote_drive/set"
+        __command/PRESS: remote_start_drive
+      # Sentry mode on/off
+      sentry_mode:
+        unique_id: "`vin`_sentry_mode"
+        platform: switch
+        name: Sentry mode
+        # state_topic: "`mqtt_prefix`/`vin`/sentry_mode/state"
+        command_topic: "`mqtt_prefix`/`vin`/sentry_mode/set"
+        icon: mdi:shield-car
+        # __get_state: "vehicle_data.vehicle_state.sentry_mode" TODO: body controller state
+        __command/ON: set_sentry_mode|{"on":true}
+        __command/OFF: sentry_mode_off|{"on":false}
+      # Set climate mode
+      # Steering wheel heater
+      # Play/pause media
+      toggle_media:
+        unique_id: "`vin`_toggle_media"
+        platform: button
+        name: Toggle media
+        icon: mdi:play-pause
+        command_topic: "`mqtt_prefix`/`vin`/toggle_media/set"
+        __command/PRESS: media_toggle_playback
+      # Wake up
+
+    # Sensors
+      # Battery heater
+      # Battery level
+      battery_level:
+        unique_id: "`vin`_battery_level"
+        platform: sensor
+        name: Battery level
+        unit_of_measurement: "%"
+        state_topic: "`mqtt_prefix`/`vin`/battery_level/state"
+        icon: mdi:battery
+        __get_state: "vehicle_data.charge_state.battery_level"
+      # Battery range
+      battery_range:
+        unique_id: "`vin`_battery_range"
+        platform: sensor
+        name: Battery range
+        unit_of_measurement: "km"
+        state_topic: "`mqtt_prefix`/`vin`/battery_range/state"
+        value_template: "{{ (value | float * 1.60934) | round(1) }}"
+        icon: mdi:ev-station
+        __get_state: "vehicle_data.charge_state.battery_range"
+      # Charge cable
+      charge_cable_connected:
+        unique_id: "`vin`_charge_cable_connected"
+        platform: binary_sensor
+        name: Charge cable
+        device_class: plug
+        state_topic: "`mqtt_prefix`/`vin`/charge_cable_connected/state"
+        value_template: "{{ 'ON' if value != \"\" else 'OFF' }}"
+        __get_state: vehicle_data.charge_state.conn_charge_cable
+      # Charge energy added
+      charge_energy_added:
+        unique_id: "`vin`_charge_energy_added"
+        platform: sensor
+        name: Charge energy added
+        unit_of_measurement: "kWh"
+        state_topic: "`mqtt_prefix`/`vin`/charge_energy_added/state"
+        value_template: "{{ value | float | round(1) }}"
+        icon: mdi:battery-positive
+        __get_state: "vehicle_data.charge_state.charge_energy_added"
+      # Charge power
+      charge_power:
+        unique_id: "`vin`_charge_power"
+        platform: sensor
+        name: Charge power
+        unit_of_measurement: "kW"
+        state_topic: "`mqtt_prefix`/`vin`/charge_power/state"
+        value_template: "{{ value | float | round(1) }}"
+        icon: mdi:ev-station
+        __get_state: "vehicle_data.charge_state.charger_power"
+      # Inside temperature
+      inside_temperature:
+        unique_id: "`vin`_inside_temperature"
+        platform: sensor
+        name: Inside temperature
+        unit_of_measurement: "°C"
+        state_topic: "`mqtt_prefix`/`vin`/inside_temperature/state"
+        value_template: "{{ value | float | round(1) }}"
+        icon: mdi:thermometer
+        __get_state: "vehicle_data.climate_state.inside_temp"
+      # Outside temperature
+      outside_temperature:
+        unique_id: "`vin`_outside_temperature"
+        platform: sensor
+        name: Outside temperature
+        unit_of_measurement: "°C"
+        state_topic: "`mqtt_prefix`/`vin`/outside_temperature/state"
+        value_template: "{{ value | float | round(1) }}"
+        icon: mdi:thermometer
+        __get_state: "vehicle_data.climate_state.outside_temp"
+      # Tire pressure FL
+      # Tire pressure FR
+      # Tire pressure RL
+      # Tire pressure RR
+      # Window DF
+      # Window DR
+      # Window PF
+      # Window PR
+
+    # Controls
+      # Auto seat climate left - switch
+      # Auto seat climate right - switch
+      # Auto steering wheel heater - switch
+      # Charge - switch
+      # Charge cable unlock
+      # Charge current
+      # Charge limit
+      # Charge port door
+      # Climate (HVAC)
+      # Defrost
+      # Flash lights
+      # Frunk
+      # Homelink
+      # Honk horn
+      # Keyless driving
+      # Lock
+      # Media player
+      # Play fart
+      # Seat heater front left
+      # Seat heater front right
+      # Sentry mode
+      # Steering wheel heater
+      # Trunk
+      # Wake
+      # Window
+
+    # Sensors
+      # Battery level
+      # Battery range
+      # Charge energy added
+      # Charge power
+      # Charging
+      # Distance to arrival
+      # Inside temperature
+      # Outside temperature
+      # Shift state
+      # Speed
+      # Status
+      # Time to arrival
+      # Traffic delay
+      # User present
+
+    # Diagnostic
+      # Charge cable connected
+      # Charge cable type
+      # Charge rate
+      # Charge current
+      # Charger voltage
+      # Front driver door
+      # Front driver window
+      # Front passenger door
+      # Front passenger window
+      # Rear driver door
+      # Rear driver window
+      # Rear passenger door
+      # Time to full charge
+
+
+
+      charge_start:
+        unique_id: "`vin`_charge_start"
+        platform: button
+        name: Charge Start
+        icon: mdi:flash
+        command_topic: "`mqtt_prefix`/`vin`/charge_start/set"
+        __on_press: charge_start        
+
+      # Diagnostic
+      last_error:
+        unique_id: "`vin`_last_error"
+        platform: sensor
+        name: Last error
+        state_topic: "`mqtt_prefix`/`vin`/last_error/state"
+        entity_category: diagnostic
+        icon: mdi:alert
+      clear_error:
+        unique_id: "`vin`_clear_error"
+        platform: button
+        name: Clear error
+        icon: mdi:alert-remove
+        entity_category: diagnostic
+        command_topic: "`mqtt_prefix`/`vin`/clear_error/set"
+        __command/PRESS: clear_error
+      local_name:
+        unique_id: "`vin`_local_name"
+        platform: sensor
+        name: Local name
+        state_topic: "`mqtt_prefix`/`vin`/local_name/state"
+        entity_category: diagnostic
+        icon: mdi:information
+        __get_state: "connection_status.local_name"
+      mac_address:
+        unique_id: "`vin`_mac_address"
+        platform: sensor
+        name: MAC address
+        state_topic: "`mqtt_prefix`/`vin`/mac_address/state"
+        entity_category: diagnostic
+        icon: mdi:information
+        __get_state: "connection_status.address"
+      rssi:
+        unique_id: "`vin`_rssi"
+        platform: sensor
+        name: Signal strength (RSSI)
+        unit_of_measurement: dBm
+        device_class: signal_strength
+        state_topic: "`mqtt_prefix`/`vin`/rssi/state"
+        entity_category: diagnostic
+        icon: mdi:signal
+        __get_state: "connection_status.rssi"
