@@ -101,7 +101,7 @@ async def init_mqtt(settings: Settings, discoveries) -> Client:
     def on_connect(client: Client, userdata, flags, rc):
         log.info(f"Connected to MQTT server with result code {rc}")
         log.debug("Initializing MQTT discovery")
-        for topic, payload in discoveries.items():
+        for topic, payload in discoveries:
             if settings.reset_discovery:
                 log.debug(f"Deleting discovery topic {topic}")
                 payload_d = json.loads(payload)
@@ -115,7 +115,9 @@ async def init_mqtt(settings: Settings, discoveries) -> Client:
                 payload_del = json.dumps(payload_d)
                 client.publish(topic, payload_del, retain=True)
 
-            client.publish(topic, payload, retain=True)        
+            log.debug(f"Publishing discovery topic {topic}")
+            log.debug(json.dumps(json.loads(payload), indent=2))
+            client.publish(topic, payload, retain=True)
         connected.set()
 
     client.will_set(f"{settings.mqtt_prefix}/status", payload="offline", qos=1, retain=True)

@@ -7,7 +7,7 @@ devices:
       sw_version: "`tb2m_version`"
       configuration_url: "`tb2m_configuration_url`"
       identifiers:
-        - tb2m
+        - "`mqtt_prefix`"
     origin:
       name: tb2m
       support_url: https://github.com/Lenart12/TeslaBle2Mqtt
@@ -38,7 +38,7 @@ devices:
       serial_number: "`vin`"
       manufacturer: Tesla
       model: "Model `vehicle_model`"
-      via_device: tb2m
+      via_device: "`mqtt_prefix`"
       identifiers:
         - "`mqtt_prefix`_`vin`"
     origin:

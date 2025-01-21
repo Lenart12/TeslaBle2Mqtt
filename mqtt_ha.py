@@ -60,16 +60,16 @@ def generate_discovery(settings: Settings, config: dict) -> Dict[str, str]:
         return device
     
     
-    discovery_devices = {}
+    discovery_devices = []
     handler = configure_device(config["devices"]["handler"], None)
 
     for vin in settings.vins:
         vehicle_device = configure_device(config["devices"]["per_vehicle"], vin)
         handler["components"][f"presence_{vin}"] = configure_device(config["devices"]["handler"]["components"]["__presence_template"], vin)
-        discovery_devices[f'{settings.discovery_prefix}/device/{settings.mqtt_prefix}_{vin}/config'] = json.dumps(vehicle_device)
+        discovery_devices.append((f'{settings.discovery_prefix}/device/{settings.mqtt_prefix}_{vin}/config', json.dumps(vehicle_device)))
         log.debug(f"Generated device for VIN {vin}")
 
-    discovery_devices[f'{settings.discovery_prefix}/device/tb2m/config'] = json.dumps(handler)
+    discovery_devices.insert(0, (f'{settings.discovery_prefix}/device/{settings.mqtt_prefix}/config', json.dumps(handler)))
 
     return discovery_devices, {
         "pub_topic": pub_topic,
