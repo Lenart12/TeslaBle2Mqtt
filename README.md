@@ -68,6 +68,9 @@ options:
                         Log level (default: INFO)
 ```
 
+![image](https://github.com/user-attachments/assets/70bb8b2e-b854-4b89-970b-87ebd084526d)
+
+
 ## Contributing
 
 Contributions are welcome! Please fork the repository and submit a pull request.
