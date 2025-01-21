@@ -158,7 +158,7 @@ devices:
         icon: mdi:shield-car
         # __get_state: "vehicle_data.vehicle_state.sentry_mode" TODO: body controller state
         __command/ON: set_sentry_mode|{"on":true}
-        __command/OFF: sentry_mode_off|{"on":false}
+        __command/OFF: set_sentry_mode|{"on":false}
       # Set climate mode
       # Steering wheel heater
       # Play/pause media
