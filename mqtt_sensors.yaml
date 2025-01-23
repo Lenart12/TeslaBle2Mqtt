@@ -57,6 +57,7 @@ devices:
         state_topic: "`mqtt_prefix`/`vin`/charge_port_door/state"
         value_template: "{{ 'open' if value | bool else 'closed' }}"
         command_topic: "`mqtt_prefix`/`vin`/charge_port_door/set"
+        payload_stop: null
         icon: mdi:ev-plug-ccs2
         __get_state: "vehicle_data.charge_state.charge_port_door_open"
         __command/OPEN: charge_port_door_open
@@ -67,7 +68,7 @@ devices:
         name: Charge port unlock
         icon: mdi:ev-plug-ccs2
         command_topic: "`mqtt_prefix`/`vin`/charge_port_door/set"
-        # __command/PRESS: handled from charge_port_door
+        payload_press: OPEN # Change PRESS to OPEN and use the same command topic as charge_port_door
       # Charger
       charger_enabled:
         unique_id: "`vin`_charge_enable"
@@ -199,7 +200,7 @@ devices:
         name: Charge cable
         device_class: plug
         state_topic: "`mqtt_prefix`/`vin`/charge_cable_connected/state"
-        value_template: "{{ 'ON' if value != \"\" else 'OFF' }}"
+        value_template: "{{ 'ON' if value != \"<nil>\" else 'OFF' }}"
         __get_state: vehicle_data.charge_state.conn_charge_cable
       # Charge energy added
       charge_energy_added:
@@ -307,16 +308,6 @@ devices:
       # Rear driver window
       # Rear passenger door
       # Time to full charge
-
-
-
-      charge_start:
-        unique_id: "`vin`_charge_start"
-        platform: button
-        name: Charge Start
-        icon: mdi:flash
-        command_topic: "`mqtt_prefix`/`vin`/charge_start/set"
-        __on_press: charge_start        
 
       # Diagnostic
       last_error:
