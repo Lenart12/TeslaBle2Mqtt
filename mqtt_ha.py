@@ -34,16 +34,24 @@ def generate_discovery(settings: Settings, config: dict) -> Dict[str, str]:
     pub_topic = {}
     sub_topic = {}
 
-    def configure_device(device: dict, vin: str|None) -> dict:
+    def configure_device(device: Dict[str, any], vin: str|None) -> dict:
         device = dict(device)
         del_keys = []
         for key, val in device.items():
             if key.startswith("__"):
-                if key == "__get_state":
-                    pub_topic[val] = format_str(device["state_topic"], vin)
+                if key.startswith("__get_state"):
+                    split = key.split('/')
+                    state_topic_key = "state_topic"
+                    if len(split) > 1:
+                        state_topic_key = f"{split[1]}_state_topic"
+                    pub_topic[val] = format_str(device[state_topic_key], vin)
                 elif key.startswith("__command"):
-                    cmd = key.split('/')[-1]
-                    topic = format_str(device["command_topic"], vin)
+                    split = key.split('/')
+                    command_topic_key = "command_topic"
+                    if len(split) > 2:
+                        command_topic_key = f"{split[1]}_command_topic"
+                    cmd = split[-1]
+                    topic = format_str(device[command_topic_key], vin)
                     if topic not in sub_topic:
                         sub_topic[topic] = {}
                     sub_topic[topic][cmd] = format_str(val, vin)
