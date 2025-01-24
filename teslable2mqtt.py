@@ -130,7 +130,7 @@ async def init_mqtt(settings: Settings, discoveries) -> Client:
     return client
 
 API_CONNECTION_STATUS = r'/api/proxy/1/vehicles/{vin}/connection_status'
-API_BODY_CONTROLLER_STATE = r'/api/1/vehicles/{vin}/body_controller_state'
+API_BODY_CONTROLLER_STATE = r'/api/proxy/1/vehicles/{vin}/body_controller_state'
 API_CHARGE_STATE = r'/api/1/vehicles/{vin}/vehicle_data?endpoints=charge_state'
 API_CLIMATE_STATE = r'/api/1/vehicles/{vin}/vehicle_data?endpoints=climate_state'
 API_COMMAND = r'/api/1/vehicles/{vin}/command/{command}?wait=true'
@@ -270,10 +270,17 @@ async def tesla_ble2mqtt(settings: Settings):
                 if not presence:
                     return
                                 
-                # body_controller_state = await fetch_json(s, settings.proxy_host, API_BODY_CONTROLLER_STATE, vin)
-                # if body_controller_state is None:
-                #     log.error(f"Error fetching body controller state for VIN {vin}")
-                #     return
+                try:
+                    body_controller_state = await fetch_json(s, settings.proxy_host, API_BODY_CONTROLLER_STATE, vin)
+                except ValueError as e:
+                    await publish_error(vin, e)
+                    return
+                
+                if body_controller_state['vehicle_sleep_status'] != 'VEHICLE_SLEEP_STATUS_AWAKE':
+                    log.info(f"Vehicle {vin} is sleeping")
+                    # TODO: Handle sleeping vehicle instead of waking it up
+                    # with fetching data
+                    pass
                 
                 try:
                     charge_state = await fetch_json(s, settings.proxy_host, API_CHARGE_STATE, vin)
@@ -294,7 +301,7 @@ async def tesla_ble2mqtt(settings: Settings):
                 
                 # Publish state
                 pub_state = {
-                    # "body_controller_state": body_controller_state,
+                    "body_controller_state": body_controller_state,
                     "connection_status": connection_status,
                     "vehicle_data": {
                         "charge_state": charge_state["charge_state"],
