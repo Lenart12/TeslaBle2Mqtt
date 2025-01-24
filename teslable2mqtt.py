@@ -288,9 +288,32 @@ async def tesla_ble2mqtt(settings: Settings):
                 
                 if body_controller_state['vehicle_sleep_status'] != 'VEHICLE_SLEEP_STATUS_AWAKE':
                     log.info(f"Vehicle {vin} is sleeping")
-                    # TODO: Handle sleeping vehicle instead of waking it up
-                    # with fetching data
-                    pass
+                    # TODO: This is horrible, I don't care because all of this should get rewritten
+                    pub_state = {
+                        "body_controller_state": body_controller_state,
+                        "connection_status": connection_status,
+                    }
+                    for sensor, topic in pub_topic.items():
+                        sensor_parts = sensor.split(".")
+                        state = pub_state
+                        if sensor_parts[0] == 'vehicle_data':
+                            # FIXME: Mark vehicle data sensors as unavailable
+                            continue
+                        for part in sensor_parts:
+                            if part not in state:
+                                if sensor != 'uptime':
+                                    log.error(f"Sensor {sensor} not found in state")
+                                state = None
+                                break
+                            state = state[part]
+                        
+                        if state is not None:
+                            old_state = topic_history[vin].get(sensor, None)
+                            if old_state != state:
+                                log.info(f"Publishing {sensor} for VIN {vin}: {state}")
+                                client.publish(topic, payload=state, qos=1, retain=True)
+                                topic_history[vin][sensor] = state
+                    return False, False # Assume that the car is not charging when sleeping
                 
                 try:
                     charge_state = await fetch_json(s, settings.proxy_host, API_CHARGE_STATE, vin)
