@@ -20,7 +20,7 @@ class Settings(BaseModel):
     log_level: Optional[str] = "INFO"
     vins: Optional[List[str]] = []
     proxy_host: Optional[str] = "http://localhost:8080"
-    poll_interval: Optional[int] = 300
+    poll_interval: Optional[int] = 90
     poll_interval_charging: Optional[int] = 20
     mqtt_host: Optional[str] = "homeassistant"
     mqtt_port: Optional[int] = 1883
@@ -51,8 +51,7 @@ def parse_args(args) -> Settings:
         return value
     parser.add_argument("-p", "--proxy-host", required=True, help="Host of the Tesla BLE proxy", type=url_type)
     def poll_interval_type(value):
-        if not isinstance(value, int):
-            raise argparse.ArgumentTypeError("Poll interval must be an integer")
+        value = int(value)
         if value < 1:
             raise argparse.ArgumentTypeError("Poll interval must be at least 1")
         return value
