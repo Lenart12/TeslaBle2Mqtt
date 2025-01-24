@@ -20,6 +20,8 @@ class Settings(BaseModel):
     log_level: Optional[str] = "INFO"
     vins: Optional[List[str]] = []
     proxy_host: Optional[str] = "http://localhost:8080"
+    poll_interval: Optional[int] = 300
+    poll_interval_charging: Optional[int] = 20
     mqtt_host: Optional[str] = "homeassistant"
     mqtt_port: Optional[int] = 1883
     mqtt_username: Optional[str] = None
@@ -48,6 +50,14 @@ def parse_args(args) -> Settings:
         
         return value
     parser.add_argument("-p", "--proxy-host", required=True, help="Host of the Tesla BLE proxy", type=url_type)
+    def poll_interval_type(value):
+        if not isinstance(value, int):
+            raise argparse.ArgumentTypeError("Poll interval must be an integer")
+        if value < 1:
+            raise argparse.ArgumentTypeError("Poll interval must be at least 1")
+        return value
+    parser.add_argument("-i", "--poll-interval", default=defaults.poll_interval, help="Poll interval for vehicle data", type=poll_interval_type)
+    parser.add_argument("-I", "--poll-interval-charging", default=defaults.poll_interval_charging, help="Poll interval for vehicle data when car is charging", type=poll_interval_type)
     parser.add_argument("-H", "--mqtt-host", default=defaults.mqtt_host, help="MQTT host")
     parser.add_argument("-P", "--mqtt-port", default=defaults.mqtt_port, help="MQTT port", type=int)
     parser.add_argument("-u", "--mqtt-username", help="MQTT username")
@@ -155,9 +165,9 @@ async def send_command(s:requests.Session, base:str, url: str, vin:  str, comman
     log.debug(resp_json)
     return True
 
+# TODO: Refactor all of this spaghetti code, it's a mess and I hate it... xkcd#1739
 async def tesla_ble2mqtt(settings: Settings):
     log.info("Starting Tesla BLE to MQTT proxy")
-    # await init_mqtt(settings.mqtt)
 
     discoveries, topic_bindings = init_discovery(settings)
     client = await init_mqtt(settings, discoveries)
@@ -253,7 +263,7 @@ async def tesla_ble2mqtt(settings: Settings):
                     connection_status = await fetch_json(s, settings.proxy_host, API_CONNECTION_STATUS, vin)
                 except ValueError as e:
                     await publish_error(vin, e)
-                    return
+                    return True, False
                 
                 presence = connection_status is not None and bool(connection_status['address'])
                 old_presence = topic_history[vin].get('presence', None)
@@ -268,13 +278,13 @@ async def tesla_ble2mqtt(settings: Settings):
                 fast_update = await process_commands() or fast_update
 
                 if not presence:
-                    return
+                    return False, False
                                 
                 try:
                     body_controller_state = await fetch_json(s, settings.proxy_host, API_BODY_CONTROLLER_STATE, vin)
                 except ValueError as e:
                     await publish_error(vin, e)
-                    return
+                    return True, False
                 
                 if body_controller_state['vehicle_sleep_status'] != 'VEHICLE_SLEEP_STATUS_AWAKE':
                     log.info(f"Vehicle {vin} is sleeping")
@@ -286,7 +296,7 @@ async def tesla_ble2mqtt(settings: Settings):
                     charge_state = await fetch_json(s, settings.proxy_host, API_CHARGE_STATE, vin)
                 except ValueError as e:
                     await publish_error(vin, e)
-                    return
+                    return True, False
 
                 
                 fast_update = await process_commands() or fast_update
@@ -295,7 +305,7 @@ async def tesla_ble2mqtt(settings: Settings):
                     climate_state = await fetch_json(s, settings.proxy_host, API_CLIMATE_STATE, vin)
                 except ValueError as e:
                     await publish_error(vin, e)
-                    return
+                    return True, False
                 
                 fast_update = await process_commands() or fast_update
                 
@@ -326,15 +336,16 @@ async def tesla_ble2mqtt(settings: Settings):
                             client.publish(topic, payload=state, qos=1, retain=True)
                             topic_history[vin][sensor] = state
 
-                return fast_update
+                return fast_update, charge_state['charge_state']['charging_state'] == 'Charging'
 
             uptime = int(time.time() - start_time)
             client.publish(pub_topic["uptime"], payload=uptime)
             fast_update = False
+            car_charging = False
             for vin in settings.vins:
-                fast_update = await process_vin(vin) or fast_update
+                fast_update, car_charging = await process_vin(vin) or fast_update
             if not fast_update:
-                new_commands.wait(20)
+                new_commands.wait(settings.poll_interval_charging if car_charging else settings.poll_interval)
                 new_commands.clear()
     except asyncio.CancelledError:
         pass
