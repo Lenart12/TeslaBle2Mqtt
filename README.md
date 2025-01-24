@@ -1,8 +1,15 @@
 # Tesla BLE to Mqtt
 
+![image](https://github.com/user-attachments/assets/6870823b-899b-4706-bfb8-272f8deb32f6)
+![image](https://github.com/user-attachments/assets/66841ccf-9ed1-446f-adef-f274f25d983e)
+![image](https://github.com/user-attachments/assets/1e257de9-1b73-4436-a76f-a2cab549910c)
+
 ## Overview
 
 Tesla BLE to Mqtt is a project that bridges Tesla Bluetooth Low Energy (BLE) data to an MQTT broker. This allows you to monitor and interact with your Tesla vehicle using MQTT from Home assistant.
+
+> [!CAUTION]
+> This project is still in its early stages, so expect unstability.
 
 ## Features
 
@@ -12,11 +19,19 @@ Tesla BLE to Mqtt is a project that bridges Tesla Bluetooth Low Energy (BLE) dat
 - Easy command line configuration
 - Automatic integration with home assistant
 
+## Todo
+
+- [x] Project prototype
+- [ ] Rewrite the handler to clean up spaghetti code
+- [ ] Better availability handling during sleep
+- [ ] Home assistant Add-on
+
 ## Requirements
 
 - Python 3.7+
 - MQTT broker (e.g., Mosquitto)
 - TeslaBleHttpProxy
+- Home assistant with mqtt integration
 
 ## Installation
 
@@ -37,9 +52,8 @@ Tesla BLE to Mqtt is a project that bridges Tesla Bluetooth Low Energy (BLE) dat
 
 Start the application:
 ```
-$ python3 teslable2mqtt.py --help
-usage: teslable2mqtt.py [-h] -v VIN -p PROXY_HOST [-H MQTT_HOST] [-P MQTT_PORT] [-u MQTT_USERNAME] [-w MQTT_PASSWORD] [-d DISCOVERY_PREFIX]
-                        [-m MQTT_PREFIX] [-y SENSORS_YAML] [-r] [-l LOG_LEVEL]
+$ python teslable2mqtt.py -h
+usage: teslable2mqtt.py [-h] -v VIN -p PROXY_HOST [-i POLL_INTERVAL] [-I POLL_INTERVAL_CHARGING] [-H MQTT_HOST] [-P MQTT_PORT] [-u MQTT_USERNAME] [-w MQTT_PASSWORD] [-d DISCOVERY_PREFIX] [-m MQTT_PREFIX] [-y SENSORS_YAML] [-r] [-l LOG_LEVEL]
 
 Tesla BLE to MQTT proxy
 
@@ -48,6 +62,10 @@ options:
   -v VIN, --vin VIN     VIN of the Tesla vehicle (can be specified multiple times) (default: None)
   -p PROXY_HOST, --proxy-host PROXY_HOST
                         Host of the Tesla BLE proxy (default: None)
+  -i POLL_INTERVAL, --poll-interval POLL_INTERVAL
+                        Poll interval for vehicle data (default: 90)
+  -I POLL_INTERVAL_CHARGING, --poll-interval-charging POLL_INTERVAL_CHARGING
+                        Poll interval for vehicle data when car is charging (default: 20)
   -H MQTT_HOST, --mqtt-host MQTT_HOST
                         MQTT host (default: homeassistant)
   -P MQTT_PORT, --mqtt-port MQTT_PORT
@@ -67,8 +85,6 @@ options:
   -l LOG_LEVEL, --log-level LOG_LEVEL
                         Log level (default: INFO)
 ```
-
-![image](https://github.com/user-attachments/assets/70bb8b2e-b854-4b89-970b-87ebd084526d)
 
 
 ## Contributing
