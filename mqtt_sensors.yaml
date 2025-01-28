@@ -6,6 +6,7 @@ devices:
       model: 'tb2m'
       sw_version: "`tb2m_version`"
       configuration_url: "`tb2m_configuration_url`"
+      __get_state/!`mqtt_prefix`/status: "status"
       identifiers:
         - "`mqtt_prefix`"
     origin:
@@ -23,22 +24,29 @@ devices:
         state_topic: "`mqtt_prefix`/tb2m/uptime/state"
         entity_category: diagnostic
         __get_state: "uptime"
-      __presence_template:
-        unique_id: "`vin`_presence"
-        name: "`vin` Presence"
+
+  # Components that are installed in to main handler device, once per vehicle
+  handler_vin_components:
+      "`vin`_connected":
+        unique_id: "`vin`_connected"
+        name: "`vin` Connected"
         platform: binary_sensor
-        device_class: presence
-        state_topic: "`mqtt_prefix`/`vin`/presence/state"
-        icon: mdi:car
-        # __get_state: is handled explicitly in code because it is synced with availability
+        device_class: connectivity
+        state_topic: "`mqtt_prefix`/`vin`/status"
+        payload_on: "online"
+        payload_off: "offline"
+        icon: mdi:car-wireless
+        # __get_state: in per_vehicle.device
+  
 
   per_vehicle:
     device:
-      name: "Tesla Model `vehicle_model`"
+      name: "Tesla `vehicle_model`"
       serial_number: "`vin`"
       manufacturer: Tesla
-      model: "Model `vehicle_model`"
+      model: "`vehicle_model`"
       via_device: "`mqtt_prefix`"
+      __get_state/!`mqtt_prefix`/`vin`/status: "status"
       identifiers:
         - "`mqtt_prefix`_`vin`"
     origin:
@@ -55,7 +63,10 @@ devices:
         name: Charge port door
         device_class: door
         state_topic: "`mqtt_prefix`/`vin`/charge_port_door/state"
-        value_template: "{{ 'open' if value == \"CLOSURESTATE_OPEN\" else 'closed' }}"
+        state_closed: "CLOSURESTATE_CLOSED"
+        state_closing: "CLOSURESTATE_CLOSING"
+        state_open: "CLOSURESTATE_OPEN"
+        state_opening: "CLOSURESTATE_OPENING"
         command_topic: "`mqtt_prefix`/`vin`/charge_port_door/set"
         payload_stop: null
         icon: mdi:ev-plug-ccs2
@@ -75,7 +86,8 @@ devices:
         platform: switch
         name: Charger
         state_topic: "`mqtt_prefix`/`vin`/charge_enable/state"
-        value_template: "{{ 'ON' if value | bool else 'OFF' }}"
+        state_on: "true"
+        state_off: "false"
         command_topic: "`mqtt_prefix`/`vin`/charge_enable/set"
         icon: mdi:ev-station
         __get_state: "vehicle_data.charge_state.charge_enable_request"
@@ -93,7 +105,7 @@ devices:
         command_topic: "`mqtt_prefix`/`vin`/charging_amps/set"
         icon: mdi:current-ac
         __get_state: "vehicle_data.charge_state.charge_current_request"
-        __command/*: set_charging_amps|{"charging_amps":`*`}
+        __command/*: set_charging_amps|{"charging_amps":`*`}      
       # Charging limit
       charging_limit:
         unique_id: "`vin`_charging_limit"
@@ -125,7 +137,7 @@ devices:
           - "off"
         mode_command_topic: "`mqtt_prefix`/`vin`/climate_mode/set"
         mode_state_topic: "`mqtt_prefix`/`vin`/climate_mode/state"
-        mode_state_template: "{{ 'auto' if value | bool else 'off' }}"
+        mode_state_template: "{{ 'auto' if value | default(false) | bool else 'off' }}"
         __get_state/mode: "vehicle_data.climate_state.is_auto_conditioning_on"
         __command/mode/auto: auto_conditioning_start
         __command/mode/off: auto_conditioning_stop
@@ -152,7 +164,7 @@ devices:
         __command/preset_mode/Camp mode: set_climate_keeper_mode|{"climate_keeper_mode":3}
         preset_mode_value_template: >-
           {% set values = {'Unknown': 'Normal', 'On':'Climate keeper','Dog': 'Dog mode', 'Party':'Camp mode'} %}
-          {{ values[value] if value in values else 'Normal' }}
+          {{ values[value] if value in values else none }}
       # Flash lights
       flash_lights:
         unique_id: "`vin`_flash_lights"
@@ -177,7 +189,8 @@ devices:
         platform: lock
         name: Door lock
         state_topic: "`mqtt_prefix`/`vin`/door_lock/state"
-        value_template: "{{ 'LOCKED' if value == \"VEHICLELOCKSTATE_LOCKED\" else 'UNLOCKED' }}"
+        state_locked: "VEHICLELOCKSTATE_LOCKED"
+        state_unlocked: "VEHICLELOCKSTATE_UNLOCKED"
         command_topic: "`mqtt_prefix`/`vin`/door_lock/set"
         icon: mdi:car-door-lock
         __get_state: "body_controller_state.vehicle_lock_state"
@@ -190,7 +203,10 @@ devices:
         name: Frunk
         device_class: door
         state_topic: "`mqtt_prefix`/`vin`/frunk/state"
-        value_template: "{{ 'open' if value == \"CLOSURESTATE_OPEN\" else 'closed' }}"
+        state_closed: "CLOSURESTATE_CLOSED"
+        state_closing: "CLOSURESTATE_CLOSING"
+        state_open: "CLOSURESTATE_OPEN"
+        state_opening: "CLOSURESTATE_OPENING"
         command_topic: "`mqtt_prefix`/`vin`/frunk/set"
         payload_stop: null
         payload_close: null
@@ -204,7 +220,10 @@ devices:
         name: Trunk
         device_class: door
         state_topic: "`mqtt_prefix`/`vin`/trunk/state"
-        value_template: "{{ 'open' if value == \"CLOSURESTATE_OPEN\" else 'closed' }}"
+        state_closed: "CLOSURESTATE_CLOSED"
+        state_closing: "CLOSURESTATE_CLOSING"
+        state_open: "CLOSURESTATE_OPEN"
+        state_opening: "CLOSURESTATE_OPENING"
         command_topic: "`mqtt_prefix`/`vin`/trunk/set"
         payload_stop: null
         icon: mdi:car-back
@@ -217,6 +236,7 @@ devices:
         platform: cover
         name: Windows
         device_class: window
+        # TODO: state is not available yet
         # state_topic: "`mqtt_prefix`/`vin`/window/state"
         # value_template: "{{ 'open' if value == \"CLOSURESTATE_OPEN\" else 'closed' }}"
         command_topic: "`mqtt_prefix`/`vin`/window/set"
@@ -238,6 +258,7 @@ devices:
         unique_id: "`vin`_sentry_mode"
         platform: switch
         name: Sentry mode
+        # TODO: state is not available yet
         # state_topic: "`mqtt_prefix`/`vin`/sentry_mode/state"
         command_topic: "`mqtt_prefix`/`vin`/sentry_mode/set"
         icon: mdi:shield-car
@@ -262,6 +283,7 @@ devices:
         platform: sensor
         name: Battery level
         unit_of_measurement: "%"
+        device_class: battery
         state_topic: "`mqtt_prefix`/`vin`/battery_level/state"
         icon: mdi:battery
         __get_state: "vehicle_data.charge_state.battery_level"
@@ -272,7 +294,7 @@ devices:
         name: Battery range
         unit_of_measurement: "km"
         state_topic: "`mqtt_prefix`/`vin`/battery_range/state"
-        value_template: "{{ (value | float * 1.60934) | round(1) }}"
+        value_template: "{{ ((value | float * 1.60934) | round(1)) if value != \"None\" else none }}"
         icon: mdi:ev-station
         __get_state: "vehicle_data.charge_state.battery_range"
       # Charge cable
@@ -282,7 +304,7 @@ devices:
         name: Charge cable
         device_class: plug
         state_topic: "`mqtt_prefix`/`vin`/charge_cable_connected/state"
-        value_template: "{{ 'ON' if value else 'OFF' }}"
+        value_template: "{{ ('ON' if value != \"null\" else 'OFF') if value != \"None\" else none }}"
         __get_state: vehicle_data.charge_state.conn_charge_cable
       # Charge energy added
       charge_energy_added:
@@ -291,7 +313,7 @@ devices:
         name: Charge energy added
         unit_of_measurement: "kWh"
         state_topic: "`mqtt_prefix`/`vin`/charge_energy_added/state"
-        value_template: "{{ value | float | round(1) }}"
+        value_template: "{{ (value | float | round(1)) if value != \"None\" else none }}"
         icon: mdi:battery-positive
         __get_state: "vehicle_data.charge_state.charge_energy_added"
       # Charge power
@@ -301,7 +323,7 @@ devices:
         name: Charge power
         unit_of_measurement: "kW"
         state_topic: "`mqtt_prefix`/`vin`/charge_power/state"
-        value_template: "{{ value | float | round(1) }}"
+        value_template: "{{ (value | float | round(1))  if value != \"None\" else none }}"
         icon: mdi:ev-station
         __get_state: "vehicle_data.charge_state.charger_power"
       # Inside temperature
@@ -311,7 +333,7 @@ devices:
         name: Inside temperature
         unit_of_measurement: "°C"
         state_topic: "`mqtt_prefix`/`vin`/inside_temperature/state"
-        value_template: "{{ value | float | round(1) }}"
+        value_template: "{{ (value | float | round(1)) if value != \"None\" else none }}"
         icon: mdi:thermometer
         __get_state: "vehicle_data.climate_state.inside_temp"
       # Outside temperature
@@ -321,7 +343,7 @@ devices:
         name: Outside temperature
         unit_of_measurement: "°C"
         state_topic: "`mqtt_prefix`/`vin`/outside_temperature/state"
-        value_template: "{{ value | float | round(1) }}"
+        value_template: "{{ (value | float | round(1)) if value != \"None\" else none }}"
         icon: mdi:thermometer
         __get_state: "vehicle_data.climate_state.outside_temp"
       # Tire pressure FL
@@ -344,7 +366,7 @@ devices:
         name: Defrost
         icon: mdi:snowflake-melt
         state_topic: "`mqtt_prefix`/`vin`/preconditioning/state"
-        value_template: "{{ 'ON' if value != \"Off\" else 'OFF' }}"
+        value_template: "{{ ('ON' if value != \"Off\" else 'OFF') if value != \"None\" else none }}"
         command_topic: "`mqtt_prefix`/`vin`/preconditioning_max/set"
         __get_state: "vehicle_data.climate_state.defrost_mode"
         __command/ON: set_preconditioning_max|{"on":true,"manual_override":false}
@@ -360,7 +382,8 @@ devices:
         name: User present
         device_class: presence
         state_topic: "`mqtt_prefix`/`vin`/user_present/state"
-        value_template: "{{ 'ON' if value == \"VEHICLE_USER_PRESENCE_PRESENT\" else 'OFF' }}"
+        payload_on: "VEHICLE_USER_PRESENCE_PRESENT"
+        payload_off: "VEHICLE_USER_PRESENCE_NOT_PRESENT"
         icon: mdi:account
         __get_state: "body_controller_state.user_presence"
 
@@ -369,6 +392,14 @@ devices:
       # Charge cable type
       # Charge rate
       # Charge current
+      charge_current:
+        unique_id: "`vin`_charger_actual_current"
+        platform: sensor
+        name: Charge current
+        unit_of_measurement: "A"
+        state_topic: "`mqtt_prefix`/`vin`/charger_actual_current/state"
+        icon: mdi:current-ac
+        __get_state: "vehicle_data.charge_state.charger_actual_current"
       # Charger voltage
       # Front driver door
       front_driver_door:
@@ -377,7 +408,8 @@ devices:
         name: Front driver door
         device_class: door
         state_topic: "`mqtt_prefix`/`vin`/front_driver_door/state"
-        value_template: "{{ 'ON' if value == \"CLOSURESTATE_OPEN\" else 'OFF' }}"
+        payload_on: "CLOSURESTATE_OPEN"
+        payload_off: "CLOSURESTATE_CLOSED"
         icon: mdi:car-door
         __get_state: "body_controller_state.closure_statuses.front_driver_door"
       # Front driver window
@@ -388,7 +420,8 @@ devices:
         name: Front passenger door
         device_class: door
         state_topic: "`mqtt_prefix`/`vin`/front_passenger_door/state"
-        value_template: "{{ 'ON' if value == \"CLOSURESTATE_OPEN\" else 'OFF' }}"
+        payload_on: "CLOSURESTATE_OPEN"
+        payload_off: "CLOSURESTATE_CLOSED"
         icon: mdi:car-door
         __get_state: "body_controller_state.closure_statuses.front_passenger_door"
       # Front passenger window
@@ -399,7 +432,8 @@ devices:
         name: Rear driver door
         device_class: door
         state_topic: "`mqtt_prefix`/`vin`/rear_driver_door/state"
-        value_template: "{{ 'ON' if value == \"CLOSURESTATE_OPEN\" else 'OFF' }}"
+        payload_on: "CLOSURESTATE_OPEN"
+        payload_off: "CLOSURESTATE_CLOSED"
         icon: mdi:car-door
         __get_state: "body_controller_state.closure_statuses.rear_driver_door"
       # Rear driver window
@@ -410,7 +444,8 @@ devices:
         name: Rear passenger door
         device_class: door
         state_topic: "`mqtt_prefix`/`vin`/rear_passenger_door/state"
-        value_template: "{{ 'ON' if value == \"CLOSURESTATE_OPEN\" else 'OFF' }}"
+        payload_on: "CLOSURESTATE_OPEN"
+        payload_off: "CLOSURESTATE_CLOSED"
         icon: mdi:car-door
         __get_state: "body_controller_state.closure_statuses.rear_passenger_door"
       # Time to full charge
@@ -430,7 +465,7 @@ devices:
         name: Sleep status
         state_topic: "`mqtt_prefix`/`vin`/sleep_status/state"
         entity_category: diagnostic
-        value_template: "{{ 'Awake' if value == \"VEHICLE_SLEEP_STATUS_AWAKE\" else 'Asleep' }}"
+        value_template: "{{ ('Awake' if value == \"VEHICLE_SLEEP_STATUS_AWAKE\" else 'Asleep') if value != \"None\" else 'Unknown' }}"
         icon: mdi:sleep
         __get_state: "body_controller_state.vehicle_sleep_status"
       last_error:
@@ -474,3 +509,14 @@ devices:
         entity_category: diagnostic
         icon: mdi:signal
         __get_state: "connection_status.rssi"
+      connection_status:
+        unique_id: "`vin`_connection_status"
+        name: Connection status
+        platform: binary_sensor
+        device_class: connectivity
+        state_topic: "`mqtt_prefix`/`vin`/status"
+        payload_on: "online"
+        payload_off: "offline"
+        entity_category: diagnostic
+        icon: mdi:car-wireless
+        availability_topic: "`mqtt_prefix`/status"

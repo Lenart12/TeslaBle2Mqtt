@@ -17,18 +17,11 @@ Tesla BLE to Mqtt is a project that bridges Tesla Bluetooth Low Energy (BLE) dat
 - Publishes vehicle data to MQTT topics
 - Supports multiple Tesla vehicles
 - Easy command line configuration
-- Automatic integration with home assistant
-
-## Todo
-
-- [x] Project prototype
-- [ ] Rewrite the handler to clean up spaghetti code
-- [ ] Better availability handling during sleep
-- [ ] Home assistant Add-on
+- Automatic integration with home assistant Mqtt autodiscovery
 
 ## Requirements
 
-- Python 3.7+
+- Go
 - MQTT broker (e.g., Mosquitto)
 - TeslaBleHttpProxy
 - Home assistant with mqtt integration
@@ -43,47 +36,50 @@ Tesla BLE to Mqtt is a project that bridges Tesla Bluetooth Low Energy (BLE) dat
 
 2. Install the required Python packages:
     ```sh
-    python3 -m venv .venv
-    source .venv/bin/activate
-    pip3 install -r requirements.txt
+    go build .
+    ./TeslaBle2Mqtt -h
     ```
 
 ## Usage
 
 Start the application:
 ```
-$ python teslable2mqtt.py -h
-usage: teslable2mqtt.py [-h] -v VIN -p PROXY_HOST [-i POLL_INTERVAL] [-I POLL_INTERVAL_CHARGING] [-H MQTT_HOST] [-P MQTT_PORT] [-u MQTT_USERNAME] [-w MQTT_PASSWORD] [-d DISCOVERY_PREFIX] [-m MQTT_PREFIX] [-y SENSORS_YAML] [-r] [-l LOG_LEVEL]
+$ ./TeslaBle2Mqtt --help
+usage: Tesla BLE to Mqtt [-h|--help] -v|--vin "<value>" [-v|--vin "<value>"
+                         ...] [-p|--proxy-host "<value>"] [-i|--poll-interval
+                         <integer>] [-I|--poll-interval-charging <integer>]
+                         [-H|--mqtt-host "<value>"] [-P|--mqtt-port <integer>]
+                         [-u|--mqtt-user "<value>"] [-w|--mqtt-pass "<value>"]
+                         [-q|--mqtt-qos <integer>] [-d|--discovery-prefix
+                         "<value>"] [-m|--mqtt-prefix "<value>"]
+                         [-y|--sensors-yaml "<value>"] [-r|--reset-discovery]
+                         [-l|--log-level "<value>"] [-D|--mqtt-debug]
 
-Tesla BLE to MQTT proxy
+                         Expose Tesla sensors and controls to MQTT with Home
+                         Assistant discovery
 
-options:
-  -h, --help            show this help message and exit
-  -v VIN, --vin VIN     VIN of the Tesla vehicle (can be specified multiple times) (default: None)
-  -p PROXY_HOST, --proxy-host PROXY_HOST
-                        Host of the Tesla BLE proxy (default: None)
-  -i POLL_INTERVAL, --poll-interval POLL_INTERVAL
-                        Poll interval for vehicle data (default: 90)
-  -I POLL_INTERVAL_CHARGING, --poll-interval-charging POLL_INTERVAL_CHARGING
-                        Poll interval for vehicle data when car is charging (default: 20)
-  -H MQTT_HOST, --mqtt-host MQTT_HOST
-                        MQTT host (default: homeassistant)
-  -P MQTT_PORT, --mqtt-port MQTT_PORT
-                        MQTT port (default: 1883)
-  -u MQTT_USERNAME, --mqtt-username MQTT_USERNAME
-                        MQTT username (default: None)
-  -w MQTT_PASSWORD, --mqtt-password MQTT_PASSWORD
-                        MQTT password (default: None)
-  -d DISCOVERY_PREFIX, --discovery-prefix DISCOVERY_PREFIX
-                        Home Assistant MQTT Discovery prefix (default: homeassistant)
-  -m MQTT_PREFIX, --mqtt-prefix MQTT_PREFIX
-                        MQTT prefix (default: tb2m)
-  -y SENSORS_YAML, --sensors-yaml SENSORS_YAML
-                        Path to the YAML file with MQTT sensors configuration (default: mqtt_sensors.yaml)
-  -r, --reset-discovery
-                        Reset MQTT discovery (for development) (default: False)
-  -l LOG_LEVEL, --log-level LOG_LEVEL
-                        Log level (default: INFO)
+Arguments:
+
+  -h  --help                    Print help information
+  -v  --vin                     VIN of the Tesla vehicle (Can be specified
+                                multiple times)
+  -p  --proxy-host              Proxy host. Default: http://localhost:8080
+  -i  --poll-interval           Poll interval in seconds. Default: 90
+  -I  --poll-interval-charging  Poll interval in seconds when charging.
+                                Default: 20
+  -H  --mqtt-host               MQTT host. Default: localhost
+  -P  --mqtt-port               MQTT port. Default: 1883
+  -u  --mqtt-user               MQTT username
+  -w  --mqtt-pass               MQTT password
+  -q  --mqtt-qos                MQTT QoS. Default: 0
+  -d  --discovery-prefix        MQTT discovery prefix. Default: homeassistant
+  -m  --mqtt-prefix             MQTT prefix. Default: tb2m
+  -y  --sensors-yaml            Path to sensors YAML file. Default:
+                                mqtt_sensors.yaml
+  -r  --reset-discovery         Reset MQTT discovery
+  -l  --log-level               Log level. Default: INFO
+  -D  --mqtt-debug              Enable MQTT debug output (sam log level as
+                                --log-level)
 ```
 
 
