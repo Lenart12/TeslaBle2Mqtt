@@ -53,6 +53,8 @@ func main() {
 		mqtt.DEBUG = NewMqttLogger(log.DebugLevel)
 	}
 
+	log.Info("Starting TeslaBle2Mqtt")
+
 	log.Debug("Running with", "settings", set)
 	mqtt.DEBUG.Println("Mqtt debug enabled")
 

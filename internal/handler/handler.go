@@ -131,7 +131,7 @@ func handleCommand(ctx context.Context, vin string, http_client *http.Client, mq
 	if body != "" {
 		body = strings.ReplaceAll(body, "`*`", string(payload))
 	}
-	log.Debug("Handling command", "key", command_key, "action", action, "body", body)
+	log.Info("Handling command", "key", command_key, "action", action, "body", body)
 
 	if action == "clear_error" {
 		publishError(mqtt_client, vin, nil)
@@ -253,7 +253,7 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 			// If new state is different from old state, publish
 			if new_state, ok := state[topic]; ok {
 				if new_state != old_state[topic] {
-					log.Debug("Publishing", "topic", topic, "access path", access_path, "state", new_state, "old_state", old_state[topic])
+					log.Info("Publishing", "topic", topic, "access path", access_path, "state", new_state, "old_state", old_state[topic])
 					token := mqtt_client.Publish(topic, s.MqttQos, true, new_state)
 					select {
 					case <-ctx.Done():
@@ -316,7 +316,7 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 		return
 	}
 
-	log.Debug("Connected to MQTT", "client_id", disc.ClientId)
+	log.Info("Connected to MQTT", "client_id", disc.ClientId)
 	defer mqtt_client.Disconnect(250)
 	defer func() {
 		token := mqtt_client.Publish(disc.WillTopic, s.MqttQos, true, "offline")
