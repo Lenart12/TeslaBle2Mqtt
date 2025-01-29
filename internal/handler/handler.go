@@ -138,16 +138,14 @@ func handleCommand(ctx context.Context, vin string, http_client *http.Client, mq
 		return nil
 	}
 
-	method := http.MethodPost
 	endpoint := ""
 	// Special case for wake_up
 	if action == "wake_up" {
-		endpoint = fmt.Sprintf("/api/1/vehicles/%s/wake_up", vin)
-		method = http.MethodGet
+		endpoint = fmt.Sprintf("/api/1/vehicles/%s/wake_up?wait=true", vin)
 	} else {
 		endpoint = fmt.Sprintf("/api/1/vehicles/%s/command/%s?wait=true", vin, action)
 	}
-	_, err := getProxyResponse(ctx, http_client, method, endpoint, body)
+	_, err := getProxyResponse(ctx, http_client, http.MethodPost, endpoint, body)
 	if err != nil {
 		return err
 	}
