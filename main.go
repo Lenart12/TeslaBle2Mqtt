@@ -62,7 +62,7 @@ func main() {
 		DiscoveryPrefix:  set.DiscoveryPrefix,
 		MqttPrefix:       set.MqttPrefix,
 		Vins:             set.Vins,
-		Version:          "0.0.1",
+		Version:          set.ReportedVersion,
 		ConfigurationUrl: set.ProxyHost + "/dashboard",
 	})
 	if err != nil {

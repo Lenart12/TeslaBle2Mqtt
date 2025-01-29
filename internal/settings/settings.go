@@ -26,6 +26,7 @@ type Settings struct {
 	SensorsYaml          string
 	LogLevel             string
 	MqttDebug            bool
+	ReportedVersion      string
 }
 
 var settings *Settings
@@ -89,6 +90,7 @@ func parseSettings(settings *Settings) {
 		return nil
 	}})
 	mqtt_debug := parser.Flag("D", "mqtt-debug", &argparse.Options{Required: false, Help: "Enable MQTT debug output (sam log level as --log-level)"})
+	reported_version := parser.String("V", "reported-version", &argparse.Options{Required: false, Help: "Version of this application, reported via Mqtt", Default: "dev"})
 
 	err := parser.Parse(os.Args)
 	if err != nil {
@@ -111,4 +113,5 @@ func parseSettings(settings *Settings) {
 	settings.ResetDiscovery = *reset_discovery
 	settings.SensorsYaml = *sensors_yaml
 	settings.MqttDebug = *mqtt_debug
+	settings.ReportedVersion = *reported_version
 }
