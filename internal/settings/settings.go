@@ -80,7 +80,7 @@ func parseSettings(settings *Settings) {
 	}})
 	discovery_prefix := parser.String("d", "discovery-prefix", &argparse.Options{Required: false, Help: "MQTT discovery prefix", Default: "homeassistant"})
 	mqtt_prefix := parser.String("m", "mqtt-prefix", &argparse.Options{Required: false, Help: "MQTT prefix", Default: "tb2m"})
-	sensors_yaml := parser.String("y", "sensors-yaml", &argparse.Options{Required: false, Help: "Path to sensors YAML file", Default: "mqtt_sensors.yaml"})
+	sensors_yaml := parser.String("y", "sensors-yaml", &argparse.Options{Required: false, Help: "Path to custom sensors YAML file", Default: ""})
 	reset_discovery := parser.Flag("r", "reset-discovery", &argparse.Options{Required: false, Help: "Reset MQTT discovery"})
 	log_level := parser.String("l", "log-level", &argparse.Options{Required: false, Help: "Log level", Default: "INFO", Validate: func(args []string) error {
 		if _, err := log.ParseLevel(args[0]); err != nil {

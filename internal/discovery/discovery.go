@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"TeslaBle2Mqtt/pkg/ha_discovery"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,13 +12,25 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+//go:embed mqtt_sensors.yaml
+var default_config []byte
+
 func loadYamlFile(filename string) (map[string]interface{}, error) {
-	yaml_file, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, err
+	var file_data []byte
+	if filename == "" {
+		file_data = default_config
+		log.Debug("Using default sensors configuration")
+	} else {
+		var err error
+		file_data, err = os.ReadFile(filename)
+		if err != nil {
+			return nil, err
+		}
+		log.Debug("Using sensors configuration from", "filename", filename)
 	}
+
 	sensors_config := make(map[string]interface{})
-	err = yaml.Unmarshal(yaml_file, &sensors_config)
+	err := yaml.Unmarshal(file_data, &sensors_config)
 
 	if err != nil {
 		return nil, err
