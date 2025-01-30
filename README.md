@@ -1,6 +1,6 @@
 # Tesla BLE to Mqtt
 
-![Tesla BLE to Mqtt logo](./docs/logo.png)
+<img src="./docs/logo.png" width="300">
 
 ## Overview
 
@@ -32,9 +32,11 @@ it easy to see when things go wrong.
 
 ## Screenshots
 
-![image](https://github.com/user-attachments/assets/6870823b-899b-4706-bfb8-272f8deb32f6)
-![image](https://github.com/user-attachments/assets/66841ccf-9ed1-446f-adef-f274f25d983e)
-![image](https://github.com/user-attachments/assets/1e257de9-1b73-4436-a76f-a2cab549910c)
+<p>
+  <img src="https://github.com/user-attachments/assets/6870823b-899b-4706-bfb8-272f8deb32f6" align="top" style="width: 30%">
+  <img src="https://github.com/user-attachments/assets/66841ccf-9ed1-446f-adef-f274f25d983e" align="top" style="width: 30%">
+  <img src="https://github.com/user-attachments/assets/1e257de9-1b73-4436-a76f-a2cab549910c" align="top" style="width: 30%">
+</p>
 
 ## Requirements
 
