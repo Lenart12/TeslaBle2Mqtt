@@ -27,6 +27,7 @@ type Settings struct {
 	LogLevel             string
 	MqttDebug            bool
 	ReportedVersion      string
+	ReportedConfigUrl    string
 }
 
 var settings *Settings
@@ -91,6 +92,7 @@ func parseSettings(settings *Settings) {
 	}})
 	mqtt_debug := parser.Flag("D", "mqtt-debug", &argparse.Options{Required: false, Help: "Enable MQTT debug output (sam log level as --log-level)"})
 	reported_version := parser.String("V", "reported-version", &argparse.Options{Required: false, Help: "Version of this application, reported via Mqtt", Default: "dev"})
+	reported_config_url := parser.String("C", "reported-config-url", &argparse.Options{Required: false, Help: "URL to the configuration page of this application, reported via Mqtt", Default: "{proxy-host}/dashboard"})
 
 	err := parser.Parse(os.Args)
 	if err != nil {
@@ -114,4 +116,5 @@ func parseSettings(settings *Settings) {
 	settings.SensorsYaml = *sensors_yaml
 	settings.MqttDebug = *mqtt_debug
 	settings.ReportedVersion = *reported_version
+	settings.ReportedConfigUrl = *reported_config_url
 }

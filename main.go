@@ -58,12 +58,17 @@ func main() {
 	log.Debug("Running with", "settings", set)
 	mqtt.DEBUG.Println("Mqtt debug enabled")
 
+	configUrl := set.ReportedConfigUrl
+	if configUrl == "{proxy-host}/dashboard" {
+		configUrl = set.ProxyHost + "/dashboard"
+	}
+
 	discoveries, err := discovery.GetDiscovery(set.SensorsYaml, discovery.DiscoverySettings{
 		DiscoveryPrefix:  set.DiscoveryPrefix,
 		MqttPrefix:       set.MqttPrefix,
 		Vins:             set.Vins,
 		Version:          set.ReportedVersion,
-		ConfigurationUrl: set.ProxyHost + "/dashboard",
+		ConfigurationUrl: configUrl,
 	})
 	if err != nil {
 		log.Fatal("Failed to get discovery", "error", err)
