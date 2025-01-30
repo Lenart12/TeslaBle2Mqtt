@@ -20,7 +20,9 @@ devices:
         platform: sensor
         name: Uptime
         state_topic: "`mqtt_prefix`/tb2m/uptime/state"
-        value_template: "{{ timedelta(seconds = (value | int)) }}"
+        value_template: "{{ (value | int / 3600) | round(2) }}"
+        device_class: duration
+        unit_of_measurement: "h"
         icon: mdi:progress-clock
         entity_category: diagnostic
         __get_state: "uptime"
