@@ -139,7 +139,7 @@ devices:
           - "off"
         mode_command_topic: "`mqtt_prefix`/`vin`/climate_mode/set"
         mode_state_topic: "`mqtt_prefix`/`vin`/climate_mode/state"
-        mode_state_template: "{{ 'auto' if value | default(false) | bool else 'off' }}"
+        mode_state_template: "{{ ('auto' if value | bool else 'off') if value != \"None\" else none }}"
         __get_state/mode: "vehicle_data.climate_state.is_auto_conditioning_on"
         __command/mode/auto: auto_conditioning_start
         __command/mode/off: auto_conditioning_stop
