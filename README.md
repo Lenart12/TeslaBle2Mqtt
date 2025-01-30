@@ -1,5 +1,7 @@
 # Tesla BLE to Mqtt
 
+![Tesla BLE to Mqtt logo](./docs/logo.png)
+
 ## Overview
 
 Tesla BLE to Mqtt is a project that bridges Tesla Bluetooth Low Energy (BLE) data to an MQTT broker. This allows you to monitor and interact with your Tesla vehicle using MQTT from Home assistant.
