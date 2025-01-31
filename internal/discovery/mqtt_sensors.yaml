@@ -477,6 +477,7 @@ devices:
         state_topic: "`mqtt_prefix`/`vin`/last_error/state"
         entity_category: diagnostic
         icon: mdi:alert
+        availability_topic: "`mqtt_prefix`/status"
       clear_error:
         unique_id: "`vin`_clear_error"
         platform: button
@@ -485,6 +486,7 @@ devices:
         entity_category: diagnostic
         command_topic: "`mqtt_prefix`/`vin`/clear_error/set"
         __command/PRESS: clear_error
+        availability_topic: "`mqtt_prefix`/status"
       local_name:
         unique_id: "`vin`_local_name"
         platform: sensor
