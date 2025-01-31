@@ -226,6 +226,9 @@ func getState(ctx context.Context, vin string, http_client *http.Client, device_
 					current_state = next_map
 				} else {
 					value = fmt.Sprintf("%v", next)
+					if value == "<nil>" {
+						value = "null"
+					}
 					break
 				}
 			} else {
