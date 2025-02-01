@@ -501,6 +501,7 @@ devices:
         name: MAC address
         state_topic: "`mqtt_prefix`/`vin`/mac_address/state"
         entity_category: diagnostic
+        value_template: "{{ value if value != "null" else none }}"
         icon: mdi:information
         __get_state: "connection_status.address"
       rssi:
@@ -510,6 +511,7 @@ devices:
         unit_of_measurement: dBm
         device_class: signal_strength
         state_topic: "`mqtt_prefix`/`vin`/rssi/state"
+        value_template: "{{ value if value != "null" else none }}"
         entity_category: diagnostic
         icon: mdi:signal
         __get_state: "connection_status.rssi"
