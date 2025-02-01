@@ -28,6 +28,8 @@ type Settings struct {
 	MqttDebug            bool
 	ReportedVersion      string
 	ReportedConfigUrl    string
+	ForceAnsiColor       bool
+	LogPrefix            string
 }
 
 var settings *Settings
@@ -93,6 +95,8 @@ func parseSettings(settings *Settings) {
 	mqtt_debug := parser.Flag("D", "mqtt-debug", &argparse.Options{Required: false, Help: "Enable MQTT debug output (sam log level as --log-level)"})
 	reported_version := parser.String("V", "reported-version", &argparse.Options{Required: false, Help: "Version of this application, reported via Mqtt", Default: "dev"})
 	reported_config_url := parser.String("C", "reported-config-url", &argparse.Options{Required: false, Help: "URL to the configuration page of this application, reported via Mqtt", Default: "{proxy-host}/dashboard"})
+	force_ansi_color := parser.Flag("a", "force-ansi-color", &argparse.Options{Required: false, Help: "Force ANSI color output"})
+	log_prefix := parser.String("L", "log-prefix", &argparse.Options{Required: false, Help: "Log prefix", Default: ""})
 
 	err := parser.Parse(os.Args)
 	if err != nil {
@@ -117,4 +121,6 @@ func parseSettings(settings *Settings) {
 	settings.MqttDebug = *mqtt_debug
 	settings.ReportedVersion = *reported_version
 	settings.ReportedConfigUrl = *reported_config_url
+	settings.ForceAnsiColor = *force_ansi_color
+	settings.LogPrefix = *log_prefix
 }

@@ -11,8 +11,10 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/log"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/muesli/termenv"
 )
 
 // Wrapper for the mqtt logger to use the charmbracelet logger
@@ -42,8 +44,49 @@ func NewMqttLogger(level log.Level) MqttLogger {
 	}
 }
 
+func ansi16Style() *log.Styles {
+	return &log.Styles{
+		Timestamp: lipgloss.NewStyle(),
+		Caller:    lipgloss.NewStyle().Foreground(lipgloss.Color("0")),
+		Prefix:    lipgloss.NewStyle().Foreground(lipgloss.Color("0")),
+		Message:   lipgloss.NewStyle(),
+		Key:       lipgloss.NewStyle().Foreground(lipgloss.Color("0")),
+		Value:     lipgloss.NewStyle(),
+		Separator: lipgloss.NewStyle().Foreground(lipgloss.Color("0")),
+		Levels: map[log.Level]lipgloss.Style{
+			log.DebugLevel: lipgloss.NewStyle().
+				SetString(strings.ToUpper(log.DebugLevel.String())).
+				MaxWidth(4).
+				Foreground(lipgloss.Color("5")),
+			log.InfoLevel: lipgloss.NewStyle().
+				SetString(strings.ToUpper(log.InfoLevel.String())).
+				MaxWidth(4).
+				Foreground(lipgloss.Color("6")),
+			log.WarnLevel: lipgloss.NewStyle().
+				SetString(strings.ToUpper(log.WarnLevel.String())).
+				MaxWidth(4).
+				Foreground(lipgloss.Color("3")),
+			log.ErrorLevel: lipgloss.NewStyle().
+				SetString(strings.ToUpper(log.ErrorLevel.String())).
+				MaxWidth(4).
+				Foreground(lipgloss.Color("1")),
+			log.FatalLevel: lipgloss.NewStyle().
+				SetString(strings.ToUpper(log.FatalLevel.String())).
+				MaxWidth(4).
+				Foreground(lipgloss.Color("1")),
+		},
+		Keys:   map[string]lipgloss.Style{},
+		Values: map[string]lipgloss.Style{},
+	}
+}
+
 func main() {
 	set := settings.Get()
+	// Set up logging
+	if set.ForceAnsiColor {
+		log.Default().SetColorProfile(termenv.ANSI)
+		log.SetStyles(ansi16Style())
+	}
 	level, _ := log.ParseLevel(set.LogLevel)
 	log.SetLevel(level)
 	if set.MqttDebug {
@@ -52,6 +95,7 @@ func main() {
 		mqtt.WARN = NewMqttLogger(log.WarnLevel)
 		mqtt.DEBUG = NewMqttLogger(log.DebugLevel)
 	}
+	log.SetPrefix(set.LogPrefix)
 
 	log.Info("Starting TeslaBle2Mqtt")
 
