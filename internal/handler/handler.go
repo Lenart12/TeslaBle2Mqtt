@@ -208,7 +208,7 @@ func getState(ctx context.Context, vin string, http_client *http.Client, device_
 			log.Debug("Vehicle not in range", "vin", vin)
 		}
 	} else {
-
+		log.Error("Invalid device type", "device_type", device_type)
 		return nil, fmt.Errorf("invalid device type")
 	}
 	for topic, access_path := range *pub {
@@ -241,15 +241,29 @@ func getState(ctx context.Context, vin string, http_client *http.Client, device_
 	return topicState, nil
 }
 
-func publishState(ctx context.Context, vin string, http_client *http.Client, mqtt_client mqtt.Client, disc *discovery.DiscoveryHandler, old_state map[ha_discovery.Topic]string) error {
+func publishState(ctx context.Context, vin string, http_client *http.Client, mqtt_client mqtt.Client, disc *discovery.DiscoveryHandler, old_state map[ha_discovery.Topic]string, onlineHysteresis *int) error {
 	log.Debug("Publish state loop", "handler", disc.Discovery.DeviceType, "for", disc.ClientId)
 	s := settings.Get()
 
 	poll_interval := s.PollInterval
+	skip_publish := false
 
 	state, err := getState(ctx, vin, http_client, disc.Discovery.DeviceType, &disc.PublishBindings)
 	// log.Debug("Got state", "state", state)
-	if err == nil {
+
+	if state["status"] == "online" {
+		*onlineHysteresis = 3
+	} else {
+		*onlineHysteresis = max(*onlineHysteresis-1, 0)
+		// Keep online
+		if *onlineHysteresis > 0 {
+			log.Debug("Device going offline", "handler", disc.ClientId, "hysteresis", onlineHysteresis)
+			skip_publish = true
+			poll_interval = 1 // Retry quickly when going offline
+		}
+	}
+
+	if err == nil && !skip_publish {
 		for topic, access_path := range disc.PublishBindings {
 			// If new state is different from old state, publish
 			if new_state, ok := state[topic]; ok {
@@ -277,7 +291,7 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 				log.Error("Failed to parse poll_interval", "error", err)
 			}
 		}
-	} else {
+	} else if err != nil {
 		log.Debug("Failed to get state", "error", err)
 	}
 
@@ -346,13 +360,14 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 	// Publish loop
 	go func() {
 		old_state := make(map[ha_discovery.Topic]string)
+		onlineHysteresis := 0
 	start_publish:
 		for {
 			publishCtx, cancel := context.WithCancel(ctx)
 			defer cancel()
 			done := make(chan bool)
 			go func() {
-				err := publishState(publishCtx, disc.Vin, http_client, mqtt_client, disc, old_state)
+				err := publishState(publishCtx, disc.Vin, http_client, mqtt_client, disc, old_state, &onlineHysteresis)
 				if err != nil && err != publishCtx.Err() {
 					log.Error("Failed to publish state", "error", err)
 					publishError(mqtt_client, disc.Vin, err)
