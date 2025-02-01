@@ -178,7 +178,7 @@ func getState(ctx context.Context, vin string, http_client *http.Client, device_
 		}
 		state["connection_status"] = connection_status
 		// If the vehicle is in range, get body controller state
-		if connection_status["address"] != "" {
+		if connection_status["address"] != nil {
 			state["status"] = "online"
 			body_controller_state_url := fmt.Sprintf("/api/proxy/1/vehicles/%s/body_controller_state", vin)
 			body_controller_state, err := getProxyResponse(ctx, http_client, http.MethodGet, body_controller_state_url, "")
@@ -197,7 +197,7 @@ func getState(ctx context.Context, vin string, http_client *http.Client, device_
 
 				if cs, ok := vehicle_state["charge_state"].(map[string]any); ok {
 					if cs["charging_state"] == "Charging" {
-						topicState["poll_interval"] = strconv.Itoa(settings.Get().PollIntervalCharging)
+						topicState["poll_interval"] = strconv.Itoa(settings.Get().PollIntervalCharging) // Special case for charging poll interval
 						log.Debug("Using charging poll interval", "vin", vin)
 					}
 				}
@@ -238,6 +238,7 @@ func getState(ctx context.Context, vin string, http_client *http.Client, device_
 		// log.Debug("Processed new", "topic", topic, "access_path", access_path, "value", value)
 		topicState[topic] = value
 	}
+	topicState["status"] = state["status"].(string) // Special case for status
 	return topicState, nil
 }
 
@@ -257,7 +258,7 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 		*onlineHysteresis = max(*onlineHysteresis-1, 0)
 		// Keep online
 		if *onlineHysteresis > 0 {
-			log.Debug("Device going offline", "handler", disc.ClientId, "hysteresis", onlineHysteresis)
+			log.Debug("Device going offline", "handler", disc.ClientId, "hysteresis", *onlineHysteresis)
 			skip_publish = true
 			poll_interval = 1 // Retry quickly when going offline
 		}
