@@ -61,8 +61,15 @@ func publishError(client mqtt.Client, vin string, err error) {
 	error_str := ""
 	if err != nil {
 		error_str = err.Error()
+		// Max length of 255
+		if len(error_str) > 255 {
+			error_str = error_str[:251]
+			error_str += "..."
+		}
+	} else {
+		error_str = "null"
 	}
-	token := client.Publish(error_topic, s.MqttQos, false, error_str)
+	token := client.Publish(error_topic, s.MqttQos, true, error_str)
 	token.Wait()
 }
 
@@ -251,6 +258,17 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 
 	state, err := getState(ctx, vin, http_client, disc.Discovery.DeviceType, &disc.PublishBindings)
 	// log.Debug("Got state", "state", state)
+
+	// If the context is done, return
+	if err != nil && ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	// Happens when vehicle was in range for connection_status, but not for body_controller_state and vehicle_data
+	if err != nil && strings.Contains(err.Error(), "vehicle not in range") {
+		state["status"] = "offline"
+		err = nil
+	}
 
 	if state["status"] == "online" {
 		*onlineHysteresis = 3

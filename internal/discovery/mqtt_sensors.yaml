@@ -476,6 +476,7 @@ devices:
         name: Last error
         state_topic: "`mqtt_prefix`/`vin`/last_error/state"
         entity_category: diagnostic
+        value_template: "{{ value if value != \"null\" else \"\" }}"
         icon: mdi:alert
         availability_topic: "`mqtt_prefix`/status"
       clear_error:
