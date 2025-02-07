@@ -1,0 +1,6 @@
+.git
+.gitignore
+README.md
+*.md
+.env
+teslable2mqtt

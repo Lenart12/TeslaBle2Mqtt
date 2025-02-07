@@ -59,6 +59,54 @@ it easy to see when things go wrong.
     ./TeslaBle2Mqtt -h
     ```
 
+## Docker Installation
+
+Pre-built multi-architecture images are available from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/lenart12/teslable2mqtt:latest
+```
+
+### Using Docker Compose (recommended)
+
+1. Create a docker-compose.yml file:
+```yaml
+version: '3.8'
+
+services:
+  tesla-ble2mqtt:
+    image: ghcr.io/lenart12/teslable2mqtt:latest
+    build: .  # Fallback to local build if needed
+    container_name: teslable2mqtt
+    command:
+      - "--mqtt-host=localhost"
+      - "--mqtt-user=your_username"
+      - "--mqtt-pass=your_password"
+      - "--vin=YOUR_TESLA_VIN"
+    network_mode: host
+    privileged: true
+```
+
+### Using Docker manually
+
+1. Build the image:
+```bash
+docker build -t teslable2mqtt .
+```
+
+2. Run the container:
+```bash
+docker run -d \
+  --name tesla-ble2mqtt \
+  --network host \
+  --privileged \
+  tesla-ble2mqtt \
+  --mqtt-host localhost \
+  --mqtt-user your_username \
+  --mqtt-pass your_password \
+  --vin YOUR_TESLA_VIN
+```
+
 ## Usage
 
 Start the application:
