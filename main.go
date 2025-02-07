@@ -97,7 +97,7 @@ func main() {
 	}
 	log.SetPrefix(set.LogPrefix)
 
-	log.Info("Starting TeslaBle2Mqtt")
+	log.Info("Starting TeslaBle2Mqtt hehe2")
 
 	log.Debug("Running with", "settings", set)
 	mqtt.DEBUG.Println("Mqtt debug enabled")
