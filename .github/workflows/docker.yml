@@ -3,9 +3,9 @@ name: Docker Build
 on:
   push:
     branches: [ "main" ]
-    tags: [ "v*.*.*" ]
   pull_request:
     branches: [ "main" ]
+  workflow_call:  # Only called by release workflow for tags
 
 env:
   REGISTRY: ghcr.io

@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+
+      - name: Build binaries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o dist/teslable2mqtt-linux-amd64
+          GOOS=linux GOARCH=arm64 go build -o dist/teslable2mqtt-linux-arm64
+          GOOS=linux GOARCH=arm GOARM=7 go build -o dist/teslable2mqtt-linux-arm
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          prerelease: false
+          files: |
+            dist/*
+          generate_release_notes: true
+
+  docker:
+    needs: release
+    uses: ./.github/workflows/docker.yml
