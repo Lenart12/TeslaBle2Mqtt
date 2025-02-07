@@ -40,10 +40,15 @@ it easy to see when things go wrong.
 
 ## Requirements
 
-- Go
+- Go 1.23
 - MQTT broker (e.g., Mosquitto)
 - TeslaBleHttpProxy
-- Home assistant with mqtt integration
+- Home assistant with mqtt integration (Optional if you do not care about displaying values)
+
+> [!WARNING]
+> Until [wimaha/TeslaBleHttpProxy#95](https://github.com/wimaha/TeslaBleHttpProxy/pull/95) gets merged, it is expected to
+> use my fork of TeslaBleHttpProxy, which you can get [here](https://github.com/Lenart12/TeslaBleHttpProxy) and then build it
+> manually as I can't create releases.
 
 ## Installation
 
@@ -53,11 +58,69 @@ it easy to see when things go wrong.
     cd TeslaBle2Mqtt
     ```
 
-2. Install the required Python packages:
+2. Build the go binary:
     ```sh
     go build .
     ./TeslaBle2Mqtt -h
     ```
+
+## Docker Installation
+
+Pre-built multi-architecture images are available from GitHub Container Registry:
+
+```bash
+docker pull ghcr.io/lenart12/teslable2mqtt:latest
+```
+
+### Using Docker Compose (recommended)
+
+1. Create a docker-compose.yml file:
+```yaml
+services:
+  teslable2mqtt:
+    image: ghcr.io/lenart12/teslable2mqtt:latest
+    container_name: teslable2mqtt
+    restart: unless-stopped
+    # Use host network to access services running on the host machine
+    network_mode: host
+    command:
+      - "--proxy-host=http://localhost:8080"
+      - "--mqtt-host=localhost"
+      - "--mqtt-user=etera"
+      - "--mqtt-pass=b3gunj37"
+      - "--vin=LRWYGCFSXPC882647"
+      - "--log-level=info"
+      - "--force-ansi-color"
+```
+
+> [!NOTE]
+> When running in Docker, use `network_mode: host` to allow the container to access services running on the host machine.
+> This allows you to use `localhost` to connect to the proxy and MQTT broker running on the host.
+> 
+> Alternatively, you can use:
+> - `host.docker.internal` instead of `localhost` on Windows/macOS
+> - The host machine's IP address (e.g., 192.168.1.x)
+
+### Using Docker manually
+
+1. Build the image:
+```bash
+docker build -t TeslaBle2Mqtt .
+```
+
+2. Run the container:
+```bash
+docker run -d \
+  --name TeslaBle2Mqtt \
+  --network host \
+  --privileged \
+  --cap-add=NET_ADMIN \
+  TeslaBle2Mqtt \
+  --mqtt-host localhost \
+  --mqtt-user your_username \
+  --mqtt-pass your_password \
+  --vin YOUR_TESLA_VIN
+```
 
 ## Usage
 
@@ -75,6 +138,7 @@ usage: Tesla BLE to Mqtt [-h|--help] -v|--vin "<value>" [-v|--vin "<value>"
                          [-l|--log-level "<value>"] [-D|--mqtt-debug]
                          [-V|--reported-version "<value>"]
                          [-C|--reported-config-url "<value>"]
+                         [-a|--force-ansi-color] [-L|--log-prefix "<value>"]
 
                          Expose Tesla sensors and controls to MQTT with Home
                          Assistant discovery
@@ -105,6 +169,9 @@ Arguments:
   -C  --reported-config-url     URL to the configuration page of this
                                 application, reported via Mqtt. Default:
                                 {proxy-host}/dashboard
+  -a  --force-ansi-color        Force ANSI color output
+  -L  --log-prefix              Log prefix. Default: 
+
 ```
 
 

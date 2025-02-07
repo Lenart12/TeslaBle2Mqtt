@@ -2,3 +2,4 @@ __pycache__/
 .venv/
 *.pyc
 TeslaBle2Mqtt
+docker-compose.yml

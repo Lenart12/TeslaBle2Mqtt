@@ -1,0 +1,7 @@
+.git
+.gitignore
+README.md
+*.md
+.env
+docs
+TeslaBle2Mqtt
