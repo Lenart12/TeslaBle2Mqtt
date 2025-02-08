@@ -87,6 +87,7 @@ type DiscoverySettings struct {
 	Vins             []string
 	Version          string
 	ConfigurationUrl string
+	MaxChargingAmps  string
 }
 
 func vehicleModel(vin byte) string {
@@ -179,6 +180,7 @@ func GetDiscovery(filename string, settings DiscoverySettings) ([]DiscoveryHandl
 			"tb2m_version":           settings.Version,
 			"tb2m_configuration_url": settings.ConfigurationUrl,
 			"vehicle_model":          vehicleModel(vin[3]),
+			"max_charging_amps":      settings.MaxChargingAmps,
 		}
 	}
 

@@ -113,6 +113,7 @@ func main() {
 		Vins:             set.Vins,
 		Version:          set.ReportedVersion,
 		ConfigurationUrl: configUrl,
+		MaxChargingAmps:  fmt.Sprintf("%d", set.MaxChargingAmps),
 	})
 	if err != nil {
 		log.Fatal("Failed to get discovery", "error", err)

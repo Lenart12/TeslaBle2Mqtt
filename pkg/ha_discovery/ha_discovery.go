@@ -3,6 +3,7 @@ package ha_discovery
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -14,7 +15,7 @@ type Action = string
 type DevicePublishBindings map[Topic]AccessPath
 type DeviceSubscribeBindings map[Topic]map[Command]Action
 
-func configureDevice(x any, formatString func(string) string, pub_topic *DevicePublishBindings, sub_topic *DeviceSubscribeBindings) (any, error) {
+func configureDevice(x any, formatString func(string) any, pub_topic *DevicePublishBindings, sub_topic *DeviceSubscribeBindings) (any, error) {
 	if object_x, ok := x.(map[string]any); ok {
 		object := make(map[string]any)
 		for key, val := range object_x {
@@ -29,7 +30,10 @@ func configureDevice(x any, formatString func(string) string, pub_topic *DeviceP
 					if !ok {
 						return nil, fmt.Errorf("invalid value for key `%s`", key)
 					}
-					val_s = formatString(val_s)
+					val_s, ok = formatString(val_s).(string)
+					if !ok {
+						return nil, fmt.Errorf("expected `%s` to be a string", val_s)
+					}
 					key_parts := strings.SplitN(key, "/", 2)
 					state_topic_key := "state_topic"
 					topic_is_key := false
@@ -53,7 +57,10 @@ func configureDevice(x any, formatString func(string) string, pub_topic *DeviceP
 						}
 					}
 
-					topic_f := formatString(topic_s)
+					topic_f, ok := formatString(topic_s).(string)
+					if !ok {
+						return nil, fmt.Errorf("expected `%s` to be a string", topic_s)
+					}
 					if _, ok := (*pub_topic)[topic_f]; ok {
 						return nil, fmt.Errorf("topic `%s` already defined", topic_f)
 					}
@@ -67,7 +74,10 @@ func configureDevice(x any, formatString func(string) string, pub_topic *DeviceP
 					if !ok {
 						return nil, fmt.Errorf("invalid value for key `%s`", key)
 					}
-					val_s = formatString(val_s)
+					val_s, ok = formatString(val_s).(string)
+					if !ok {
+						return nil, fmt.Errorf("expected `%s` to be a string", val_s)
+					}
 					key_parts := strings.SplitN(key, "/", 3)
 					if len(key_parts) > 3 {
 						return nil, fmt.Errorf("invalid key `%s` for __command", key)
@@ -89,7 +99,10 @@ func configureDevice(x any, formatString func(string) string, pub_topic *DeviceP
 					if !ok {
 						return nil, fmt.Errorf("expected `%s` to be a topic string", command_topic_key)
 					}
-					topic_f := formatString(topic_s)
+					topic_f, ok := formatString(topic_s).(string)
+					if !ok {
+						return nil, fmt.Errorf("expected `%s` to be a string", topic_s)
+					}
 					bindings, ok := (*sub_topic)[topic_f]
 					if !ok {
 						bindings = make(map[Command]Action)
@@ -105,7 +118,10 @@ func configureDevice(x any, formatString func(string) string, pub_topic *DeviceP
 				if err != nil {
 					return nil, err
 				}
-				key_f := formatString(key)
+				key_f, ok := formatString(key).(string)
+				if !ok {
+					return nil, fmt.Errorf("expected `%s` to be a string", key)
+				}
 				object[key_f] = val_c
 			}
 		}
@@ -162,10 +178,23 @@ func GenerateResetConfiguration(original *json.RawMessage) (json.RawMessage, err
 // It replaces any string in the configuration with `key` with the values in the replacements map and
 // deletes any key that starts with __. It returns bindings for objects with the __get_state or __command key.
 func ParseDeviceConfiguration(dev map[string]any, replacements map[string]string) (discovery any, pub_topic DevicePublishBindings, sub_topic DeviceSubscribeBindings, err error) {
-	formatString := func(value string) string {
+	if _, ok := replacements["int"]; ok {
+		return nil, nil, nil, fmt.Errorf("int is a reserved replacement key")
+	}
+
+	formatString := func(value string) any {
 		for key, val := range replacements {
 			value = strings.ReplaceAll(value, "`"+key+"`", val)
 		}
+		if strings.HasSuffix(value, "`int`") {
+			value = strings.TrimSuffix(value, "`int`")
+			value_int, err := strconv.Atoi(value)
+			if err != nil {
+				return value
+			}
+			return value_int
+		}
+
 		return value
 	}
 
