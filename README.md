@@ -84,7 +84,7 @@ services:
       - "--mqtt-host=localhost"
       - "--mqtt-user=your_username"
       - "--mqtt-pass=your_password"
-      - "--vin=LRWYGCFSXPC882647"
+      - "--vin=YOUR_TESLA_VIN"
       - "--log-level=info"
       - "--force-ansi-color"
 ```
