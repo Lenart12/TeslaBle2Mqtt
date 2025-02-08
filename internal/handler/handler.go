@@ -366,6 +366,10 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 	for topic := range disc.SubscribeBindings {
 		to_subscribe[topic] = s.MqttQos
 	}
+	// Subscribe to status topic to resend discovery on HA restart
+	ha_status_topic := fmt.Sprintf("%s/status", s.DiscoveryPrefix)
+	to_subscribe[ha_status_topic] = s.MqttQos
+
 	message_chan := make(chan mqtt.Message, 10)
 
 	mqtt_client.SubscribeMultiple(to_subscribe, func(client mqtt.Client, msg mqtt.Message) {
@@ -373,6 +377,7 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 	})
 
 	cancel_get_state_ch := make(chan bool)
+	clear_old_state_request := false
 
 	http_client := &http.Client{}
 
@@ -386,6 +391,11 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 			defer cancel()
 			done := make(chan bool)
 			go func() {
+				if clear_old_state_request {
+					log.Debug("Clearing old state", "handler", disc.ClientId)
+					old_state = make(map[ha_discovery.Topic]string)
+					clear_old_state_request = false
+				}
 				err := publishState(publishCtx, disc.Vin, http_client, mqtt_client, disc, old_state, &onlineHysteresis)
 				if err != nil && err != publishCtx.Err() {
 					log.Error("Failed to publish state", "error", err)
@@ -437,6 +447,20 @@ handler_loop:
 			break handler_loop
 		case msg := <-message_chan:
 			log.Debug("Received message", "topic", msg.Topic(), "message", string(msg.Payload()))
+
+			if msg.Topic() == ha_status_topic {
+				log.Debug("HA status changed", "to", string(msg.Payload()))
+				if string(msg.Payload()) != "online" {
+					continue
+				}
+				log.Info("Resending discovery", "topic", ha_status_topic)
+				if err := publishDiscovery(mqtt_client, &disc.Discovery); err != nil {
+					log.Error("Failed to publish discovery", "error", err)
+				}
+				clear_old_state_request = true
+				continue
+			}
+
 			if handler, ok := disc.SubscribeBindings[msg.Topic()]; ok {
 				cancel_get_state_ch <- true
 				err := handleCommand(ctx, disc.Vin, http_client, mqtt_client, handler, msg.Payload())

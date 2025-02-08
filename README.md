@@ -52,27 +52,24 @@ it easy to see when things go wrong.
 
 ## Installation
 
-1. Clone the repository:
-    ```sh
-    git clone https://github.com/yourusername/TeslaBle2Mqtt.git
-    cd TeslaBle2Mqtt
-    ```
+### Option 1: Home Assistant Addon (Recommended)
 
-2. Build the go binary:
-    ```sh
-    go build .
-    ./TeslaBle2Mqtt -h
-    ```
+The easiest way to install TeslaBle2Mqtt is through the Home Assistant addon store:
 
-## Docker Installation
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https://github.com/Lenart12/TeslaBle2Mqtt-addon)
+
+1. Click the button above to add the repository
+2. Find and install "Tesla BLE to MQTT" in the addon store
+3. Configure your vehicle VIN and MQTT settings
+4. Start the addon
+
+### Option 2: Docker Compose
 
 Pre-built multi-architecture images are available from GitHub Container Registry:
 
 ```bash
 docker pull ghcr.io/lenart12/teslable2mqtt:latest
 ```
-
-### Using Docker Compose (recommended)
 
 1. Create a docker-compose.yml file:
 ```yaml
@@ -81,7 +78,6 @@ services:
     image: ghcr.io/lenart12/teslable2mqtt:latest
     container_name: teslable2mqtt
     restart: unless-stopped
-    # Use host network to access services running on the host machine
     network_mode: host
     command:
       - "--proxy-host=http://localhost:8080"
@@ -93,6 +89,11 @@ services:
       - "--force-ansi-color"
 ```
 
+2. Start the container:
+```bash
+docker compose up -d
+```
+
 > [!NOTE]
 > When running in Docker, use `network_mode: host` to allow the container to access services running on the host machine.
 > This allows you to use `localhost` to connect to the proxy and MQTT broker running on the host.
@@ -101,25 +102,46 @@ services:
 > - `host.docker.internal` instead of `localhost` on Windows/macOS
 > - The host machine's IP address (e.g., 192.168.1.x)
 
-### Using Docker manually
+### Option 3: Manual Build from Source
+
+1. Clone the repository:
+    ```sh
+    git clone https://github.com/yourusername/TeslaBle2Mqtt.git
+    cd TeslaBle2Mqtt
+    ```
+
+2. Build and run:
+    ```sh
+    go build
+    ./TeslaBle2Mqtt \
+      --proxy-host=http://localhost:8080 \
+      --mqtt-host=localhost \
+      --mqtt-user=your_username \
+      --mqtt-pass=your_password \
+      --vin=YOUR_TESLA_VIN \
+      --log-level=info
+    ```
+
+### Option 4: Manual Docker
 
 1. Build the image:
 ```bash
-docker build -t TeslaBle2Mqtt .
+docker build -t teslable2mqtt .
 ```
 
 2. Run the container:
 ```bash
 docker run -d \
-  --name TeslaBle2Mqtt \
+  --name teslable2mqtt \
   --network host \
-  --privileged \
-  --cap-add=NET_ADMIN \
-  TeslaBle2Mqtt \
-  --mqtt-host localhost \
-  --mqtt-user your_username \
-  --mqtt-pass your_password \
-  --vin YOUR_TESLA_VIN
+  --restart unless-stopped \
+  teslable2mqtt \
+  --proxy-host=http://localhost:8080 \
+  --mqtt-host=localhost \
+  --mqtt-user=your_username \
+  --mqtt-pass=your_password \
+  --vin=YOUR_TESLA_VIN \
+  --log-level=info
 ```
 
 ## Usage
