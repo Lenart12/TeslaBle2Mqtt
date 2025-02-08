@@ -15,6 +15,7 @@ type Settings struct {
 	ProxyHost            string
 	PollInterval         int
 	PollIntervalCharging int
+	MaxChargingAmps      int
 	MqttHost             string
 	MqttPort             int
 	MqttUser             string
@@ -68,6 +69,16 @@ func parseSettings(settings *Settings) {
 	}})
 	poll_interval := parser.Int("i", "poll-interval", &argparse.Options{Required: false, Help: "Poll interval in seconds", Default: 90})
 	poll_interval_charging := parser.Int("I", "poll-interval-charging", &argparse.Options{Required: false, Help: "Poll interval in seconds when charging", Default: 20})
+	max_charging_amps := parser.Int("A", "max-charging-amps", &argparse.Options{Required: false, Help: "Max charging amps", Default: 16, Validate: func(args []string) error {
+		amps, err := strconv.Atoi(args[0])
+		if err != nil {
+			return fmt.Errorf("invalid max charging amps")
+		}
+		if amps < 5 || amps > 48 {
+			return fmt.Errorf("invalid max charging amps")
+		}
+		return nil
+	}})
 	mqtt_host := parser.String("H", "mqtt-host", &argparse.Options{Required: false, Help: "MQTT host", Default: "localhost"})
 	mqtt_port := parser.Int("P", "mqtt-port", &argparse.Options{Required: false, Help: "MQTT port", Default: 1883})
 	mqtt_user := parser.String("u", "mqtt-user", &argparse.Options{Required: false, Help: "MQTT username"})
@@ -109,6 +120,7 @@ func parseSettings(settings *Settings) {
 	settings.ProxyHost = *proxy_host
 	settings.PollInterval = *poll_interval
 	settings.PollIntervalCharging = *poll_interval_charging
+	settings.MaxChargingAmps = *max_charging_amps
 	settings.MqttHost = *mqtt_host
 	settings.MqttPort = *mqtt_port
 	settings.MqttUser = *mqtt_user

@@ -152,14 +152,14 @@ $ ./TeslaBle2Mqtt --help
 usage: Tesla BLE to Mqtt [-h|--help] -v|--vin "<value>" [-v|--vin "<value>"
                          ...] [-p|--proxy-host "<value>"] [-i|--poll-interval
                          <integer>] [-I|--poll-interval-charging <integer>]
-                         [-H|--mqtt-host "<value>"] [-P|--mqtt-port <integer>]
-                         [-u|--mqtt-user "<value>"] [-w|--mqtt-pass "<value>"]
-                         [-q|--mqtt-qos <integer>] [-d|--discovery-prefix
-                         "<value>"] [-m|--mqtt-prefix "<value>"]
-                         [-y|--sensors-yaml "<value>"] [-r|--reset-discovery]
-                         [-l|--log-level "<value>"] [-D|--mqtt-debug]
-                         [-V|--reported-version "<value>"]
-                         [-C|--reported-config-url "<value>"]
+                         [-A|--max-charging-amps <integer>] [-H|--mqtt-host
+                         "<value>"] [-P|--mqtt-port <integer>] [-u|--mqtt-user
+                         "<value>"] [-w|--mqtt-pass "<value>"] [-q|--mqtt-qos
+                         <integer>] [-d|--discovery-prefix "<value>"]
+                         [-m|--mqtt-prefix "<value>"] [-y|--sensors-yaml
+                         "<value>"] [-r|--reset-discovery] [-l|--log-level
+                         "<value>"] [-D|--mqtt-debug] [-V|--reported-version
+                         "<value>"] [-C|--reported-config-url "<value>"]
                          [-a|--force-ansi-color] [-L|--log-prefix "<value>"]
 
                          Expose Tesla sensors and controls to MQTT with Home
@@ -174,6 +174,7 @@ Arguments:
   -i  --poll-interval           Poll interval in seconds. Default: 90
   -I  --poll-interval-charging  Poll interval in seconds when charging.
                                 Default: 20
+  -A  --max-charging-amps       Max charging amps. Default: 16
   -H  --mqtt-host               MQTT host. Default: localhost
   -P  --mqtt-port               MQTT port. Default: 1883
   -u  --mqtt-user               MQTT username

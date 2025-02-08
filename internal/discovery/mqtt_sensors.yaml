@@ -100,8 +100,8 @@ devices:
         unique_id: "`vin`_charging_amps"
         platform: number
         name: Charging current
-        min: 5
-        max: 16
+        min: 1
+        max: "`max_charging_amps``int`"
         unit_of_measurement: A
         state_topic: "`mqtt_prefix`/`vin`/charging_amps/state"
         command_topic: "`mqtt_prefix`/`vin`/charging_amps/set"
