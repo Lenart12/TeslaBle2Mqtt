@@ -82,8 +82,8 @@ services:
     command:
       - "--proxy-host=http://localhost:8080"
       - "--mqtt-host=localhost"
-      - "--mqtt-user=etera"
-      - "--mqtt-pass=b3gunj37"
+      - "--mqtt-user=your_username"
+      - "--mqtt-pass=your_password"
       - "--vin=LRWYGCFSXPC882647"
       - "--log-level=info"
       - "--force-ansi-color"
