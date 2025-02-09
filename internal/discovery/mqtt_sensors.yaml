@@ -450,7 +450,17 @@ devices:
         payload_off: "CLOSURESTATE_CLOSED"
         icon: mdi:car-door
         __get_state: "body_controller_state.closure_statuses.rear_passenger_door"
-      # Time to full charge
+      # Time to charge limit
+      time_to_charge_limit:
+        unique_id: "`vin`_time_to_charge_limit"
+        platform: sensor
+        name: Time to charge limit
+        unit_of_measurement: "h"
+        device_class: duration
+        state_topic: "`mqtt_prefix`/`vin`/time_to_charge_limit/state"
+        value_template: "{{ value | float / 60 if value != \"None\" else none }}"
+        icon: mdi:progress-check
+        __get_state: "vehicle_data.charge_state.minutes_to_full_charge"
 
       # Diagnostic
       wakeup_car:
