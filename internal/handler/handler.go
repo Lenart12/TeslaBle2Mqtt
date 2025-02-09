@@ -259,6 +259,11 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 	state, err := getState(ctx, vin, http_client, disc.Discovery.DeviceType, &disc.PublishBindings)
 	// log.Debug("Got state", "state", state)
 
+	// Create state map if it doesn't exist
+	if state == nil {
+		state = make(map[string]string)
+	}
+
 	// If the context is done, return
 	if err != nil && ctx.Err() != nil {
 		return ctx.Err()
