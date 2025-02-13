@@ -80,26 +80,53 @@ services:
     restart: unless-stopped
     network_mode: host
     command:
-      - "--proxy-host=http://localhost:8080"
+      - "--proxy-host=http://teslablehttpproxy:8080"
       - "--mqtt-host=localhost"
       - "--mqtt-user=your_username"
       - "--mqtt-pass=your_password"
       - "--vin=YOUR_TESLA_VIN"
       - "--log-level=info"
       - "--force-ansi-color"
+  teslablehttpproxy:
+    build:
+      # Use Lenart12/TeslaBleHttpProxy until the PR gets merged
+      # https://github.com/wimaha/TeslaBleHttpProxy/pull/95
+      context: .
+      dockerfile_inline: |
+        FROM golang:1.23-alpine AS builder
+        RUN apk add --no-cache git
+        WORKDIR /build
+        RUN git clone https://github.com/Lenart12/TeslaBleHttpProxy.git . && \
+            git checkout 40cb54bb52be5e4967f4f48ede84c25afe34fde6 && \
+            go build -o teslablehttpproxy
+        FROM alpine:latest
+        COPY --from=builder /build/teslablehttpproxy /usr/local/bin/
+        EXPOSE 8080
+        ENTRYPOINT ["teslablehttpproxy"]
+    container_name: teslablehttpproxy
+    restart: unless-stopped
+    command:
+      - "--keys=/key"
+      - "--cacheMaxAge=5"
+      - "--logLevel=info"
+    ports:
+      - "8080:8080"
+    volumes:
+      - /path/to/your/keys:/key
+      - /var/run/dbus:/var/run/dbus
 ```
 
-2. Start the container:
+2. Start the containers:
 ```bash
 docker compose up -d
 ```
 
 > [!NOTE]
 > When running in Docker, use `network_mode: host` to allow the container to access services running on the host machine.
-> This allows you to use `localhost` to connect to the proxy and MQTT broker running on the host.
+> This allows you to use `localhost` to connect to MQTT broker running on the host.
 > 
 > Alternatively, you can use:
-> - `host.docker.internal` instead of `localhost` on Windows/macOS
+> - `host.docker.internal` instead of `localhost` for MQTT on Windows/macOS
 > - The host machine's IP address (e.g., 192.168.1.x)
 
 ### Option 3: Manual Build from Source
