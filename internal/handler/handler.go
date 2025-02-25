@@ -341,12 +341,24 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 
 	s := settings.Get()
 
+	clear_old_state_request := false
 	clientOpts := mqtt.NewClientOptions().
 		AddBroker(fmt.Sprintf("tcp://%s:%d", s.MqttHost, s.MqttPort)).
 		SetUsername(s.MqttUser).
 		SetPassword(s.MqttPass).
 		SetClientID(disc.ClientId).
-		SetWill(disc.WillTopic, "offline", s.MqttQos, true)
+		SetWill(disc.WillTopic, "offline", s.MqttQos, true).
+		SetOnConnectHandler(func(client mqtt.Client) {
+			log.Info("Connected to MQTT", "client_id", disc.ClientId)
+			clear_old_state_request = true
+			if err := publishDiscovery(client, &disc.Discovery); err != nil {
+				log.Error("Failed to publish discovery", "error", err)
+				return
+			}
+		}).
+		SetConnectionLostHandler(func(client mqtt.Client, err error) {
+			log.Error("Connection lost to MQTT", "client_id", disc.ClientId, "error", err)
+		})
 
 	mqtt_client := mqtt.NewClient(clientOpts)
 
@@ -355,17 +367,11 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 		return
 	}
 
-	log.Info("Connected to MQTT", "client_id", disc.ClientId)
 	defer mqtt_client.Disconnect(250)
 	defer func() {
 		token := mqtt_client.Publish(disc.WillTopic, s.MqttQos, true, "offline")
 		token.Wait()
 	}()
-
-	if err := publishDiscovery(mqtt_client, &disc.Discovery); err != nil {
-		log.Error("Failed to publish discovery", "error", err)
-		return
-	}
 
 	to_subscribe := map[string]byte{}
 	for topic := range disc.SubscribeBindings {
@@ -382,7 +388,6 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 	})
 
 	cancel_get_state_ch := make(chan bool)
-	clear_old_state_request := false
 
 	http_client := &http.Client{}
 
