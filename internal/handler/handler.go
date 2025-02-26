@@ -249,30 +249,35 @@ func getState(ctx context.Context, vin string, http_client *http.Client, device_
 	return topicState, nil
 }
 
-func publishState(ctx context.Context, vin string, http_client *http.Client, mqtt_client mqtt.Client, disc *discovery.DiscoveryHandler, old_state map[ha_discovery.Topic]string, onlineHysteresis *int) error {
-	log.Debug("Publish state loop", "handler", disc.Discovery.DeviceType, "for", disc.ClientId)
+func publishState(ctx context.Context, vin string, http_client *http.Client, mqtt_client mqtt.Client, disc *discovery.DiscoveryHandler, old_state map[ha_discovery.Topic]string, onlineHysteresis *int) (time.Duration, error) {
+	start := time.Now()
 	s := settings.Get()
 
-	poll_interval := s.PollInterval
+	poll_interval := time.Duration(s.PollInterval) * time.Second
 	skip_publish := false
 
+	if disc.ClientId != s.MqttPrefix {
+		log.Debug("Getting state", "handler", disc.ClientId)
+	}
 	state, err := getState(ctx, vin, http_client, disc.Discovery.DeviceType, &disc.PublishBindings)
 	// log.Debug("Got state", "state", state)
 
-	// Create state map if it doesn't exist
-	if state == nil {
-		state = make(map[string]string)
-	}
+	if err != nil {
+		poll_interval = time.Duration(1) * time.Second
 
-	// If the context is done, return
-	if err != nil && ctx.Err() != nil {
-		return ctx.Err()
-	}
-
-	// Happens when vehicle was in range for connection_status, but not for body_controller_state and vehicle_data
-	if err != nil && strings.Contains(err.Error(), "vehicle not in range") {
-		state["status"] = "offline"
-		err = nil
+		// Happens when vehicle was in range for connection_status, but not for body_controller_state and vehicle_data
+		if strings.Contains(err.Error(), "vehicle not in range") {
+			state = make(map[string]string)
+			state["status"] = "offline"
+			err = nil
+		} else {
+			if ctx.Err() != nil {
+				log.Warn("Timed out getting state", "handler", disc.ClientId)
+				return poll_interval, ctx.Err()
+			}
+			log.Warn("Failed to get state", "handler", disc.ClientId, "error", err)
+			return poll_interval, err
+		}
 	}
 
 	if state["status"] == "online" {
@@ -283,7 +288,7 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 		if *onlineHysteresis > 0 {
 			log.Debug("Device going offline", "handler", disc.ClientId, "hysteresis", *onlineHysteresis)
 			skip_publish = true
-			poll_interval = 1 // Retry quickly when going offline
+			poll_interval = time.Duration(1) * time.Second // Retry quickly when going offline
 		}
 	}
 
@@ -292,16 +297,18 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 			// If new state is different from old state, publish
 			if new_state, ok := state[topic]; ok {
 				if new_state != old_state[topic] {
-					log.Info("Publishing", "topic", topic, "access path", access_path, "state", new_state, "old_state", old_state[topic])
+					if disc.ClientId != s.MqttPrefix {
+						log.Info("Publishing", "topic", topic, "access path", access_path, "state", new_state, "old_state", old_state[topic])
+					}
 					token := mqtt_client.Publish(topic, s.MqttQos, true, new_state)
 					select {
 					case <-ctx.Done():
-						return ctx.Err()
+						return time.Duration(1) * time.Second, ctx.Err()
 					case <-token.Done():
 					}
 					if token.Error() != nil {
-						log.Error("Failed to publish state", "error", token.Error())
-						return token.Error()
+						log.Error("Failed to publish to topic", "error", token.Error())
+						return time.Duration(1) * time.Second, token.Error()
 					}
 					old_state[topic] = new_state
 				}
@@ -310,25 +317,16 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 		if pi, ok := state["poll_interval"]; ok {
 			pi_int, err := strconv.Atoi(pi)
 			if err == nil {
-				poll_interval = pi_int
+				poll_interval = time.Duration(pi_int) * time.Second
 			} else {
 				log.Error("Failed to parse poll_interval", "error", err)
 			}
 		}
 	} else if err != nil {
 		log.Debug("Failed to get state", "error", err)
+		return poll_interval, err
 	}
-
-	log.Debug("Waiting for next poll interval", "interval", poll_interval)
-	// Done, wait for the next poll interval
-	ctxWait, cancel := context.WithTimeout(ctx, time.Duration(poll_interval)*time.Second)
-	defer cancel()
-	<-ctxWait.Done()
-	if ctx.Err() != nil {
-		return ctx.Err()
-	} else {
-		return err
-	}
+	return poll_interval - time.Since(start), nil
 }
 
 // Run is the main handler function, it takes a discovery object and runs the handler
@@ -406,10 +404,14 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 					old_state = make(map[ha_discovery.Topic]string)
 					clear_old_state_request = false
 				}
-				err := publishState(publishCtx, disc.Vin, http_client, mqtt_client, disc, old_state, &onlineHysteresis)
+				to_wait, err := publishState(publishCtx, disc.Vin, http_client, mqtt_client, disc, old_state, &onlineHysteresis)
 				if err != nil && err != publishCtx.Err() {
 					log.Error("Failed to publish state", "error", err)
 					publishError(mqtt_client, disc.Vin, err)
+				}
+				select {
+				case <-time.After(to_wait):
+				case <-publishCtx.Done():
 				}
 				done <- true
 			}()

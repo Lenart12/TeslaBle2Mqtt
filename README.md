@@ -97,7 +97,7 @@ services:
         RUN apk add --no-cache git
         WORKDIR /build
         RUN git clone https://github.com/Lenart12/TeslaBleHttpProxy.git . && \
-            git checkout 40cb54bb52be5e4967f4f48ede84c25afe34fde6 && \
+            git checkout fdf944bdc4de6e375505a556c787d88da7291d16 && \
             go build -o teslablehttpproxy
         FROM alpine:latest
         COPY --from=builder /build/teslablehttpproxy /usr/local/bin/
