@@ -256,7 +256,9 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 	poll_interval := time.Duration(s.PollInterval) * time.Second
 	skip_publish := false
 
-	log.Debug("Getting state", "handler", disc.ClientId)
+	if disc.ClientId != s.MqttPrefix {
+		log.Debug("Getting state", "handler", disc.ClientId)
+	}
 	state, err := getState(ctx, vin, http_client, disc.Discovery.DeviceType, &disc.PublishBindings)
 	// log.Debug("Got state", "state", state)
 
@@ -295,7 +297,9 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 			// If new state is different from old state, publish
 			if new_state, ok := state[topic]; ok {
 				if new_state != old_state[topic] {
-					log.Info("Publishing", "topic", topic, "access path", access_path, "state", new_state, "old_state", old_state[topic])
+					if disc.ClientId != s.MqttPrefix {
+						log.Info("Publishing", "topic", topic, "access path", access_path, "state", new_state, "old_state", old_state[topic])
+					}
 					token := mqtt_client.Publish(topic, s.MqttQos, true, new_state)
 					select {
 					case <-ctx.Done():
@@ -303,7 +307,7 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 					case <-token.Done():
 					}
 					if token.Error() != nil {
-						log.Error("Failed to publish state", "error", token.Error())
+						log.Error("Failed to publish to topic", "error", token.Error())
 						return time.Duration(1) * time.Second, token.Error()
 					}
 					old_state[topic] = new_state
