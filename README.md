@@ -101,10 +101,12 @@ services:
         # Read here!!!
         # Replace <TBHP-COMMIT> in the following line with the commit hash you want to use:
         #
-        #   * # Better if you only have one BT adapter and plan to only use it for TeslaBleHttpProxy
-        #     Raw hci adapter: acc602fb7dbc2c158ed2651dc9960af77a3ad86c
+        #   * # Better if you have a BT adapter and plan to  use it *only* for TeslaBleHttpProxy
+        #     Raw hci adapter: 1d2c37e9444ffb81b24c773131f11f448371aba1
+        #     # If you use this commit, you may also need to add certain privileges to the container:
+        #     network_mode: host, cap_add: NET_ADMIN
         #
-        #   * # If you have multiple BT adapters, or plan to use it for other things, use the following commit:
+        #   * # If you plan to use the same adapter for other things, use the following commit:
         #     BlueZ adapter: dd527720bd0221f28dbc19e98e11c499e5836f06 
         #
         # For more information see raw HCI section here:
