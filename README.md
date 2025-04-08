@@ -96,8 +96,23 @@ services:
         FROM golang:1.23-alpine AS builder
         RUN apk add --no-cache git
         WORKDIR /build
+        ##################################
+        #
+        # Read here!!!
+        # Replace <TBHP-COMMIT> in the following line with the commit hash you want to use:
+        #
+        #   * # Better if you only have one BT adapter and plan to only use it for TeslaBleHttpProxy
+        #     Raw hci adapter: acc602fb7dbc2c158ed2651dc9960af77a3ad86c
+        #
+        #   * # If you have multiple BT adapters, or plan to use it for other things, use the following commit:
+        #     BlueZ adapter: dd527720bd0221f28dbc19e98e11c499e5836f06 
+        #
+        # For more information see raw HCI section here:
+        #     https://github.com/Lenart12/TeslaBle2Mqtt-addon/blob/main/TeslaBle2Mqtt/DOCS.md#raw-hci
+        #
+        ##################################
         RUN git clone https://github.com/Lenart12/TeslaBleHttpProxy.git . && \
-            git checkout fdf944bdc4de6e375505a556c787d88da7291d16 && \
+            git checkout <TBHP-COMMIT> && \ 
             go build -o teslablehttpproxy
         FROM alpine:latest
         COPY --from=builder /build/teslablehttpproxy /usr/local/bin/
