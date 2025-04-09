@@ -249,7 +249,28 @@ func getState(ctx context.Context, vin string, http_client *http.Client, device_
 	return topicState, nil
 }
 
-func publishState(ctx context.Context, vin string, http_client *http.Client, mqtt_client mqtt.Client, disc *discovery.DiscoveryHandler, old_state map[ha_discovery.Topic]string, onlineHysteresis *int) (time.Duration, error) {
+func isFastPollEvent(access_path, new_value string) bool {
+	// Car is newly discovered
+	if access_path == "status" && new_value == "online" {
+		return true
+	}
+	// Car just woke up
+	if access_path == "body_controller_state.vehicle_sleep_status" {
+		if new_value == "VEHICLE_SLEEP_STATUS_AWAKE" {
+			return true
+		}
+	}
+
+	return false
+}
+
+type publishStatePersistent struct {
+	online_hysteresis    int
+	fast_poll_start_time time.Time
+	fast_poll_interval   time.Duration
+}
+
+func publishState(ctx context.Context, vin string, http_client *http.Client, mqtt_client mqtt.Client, disc *discovery.DiscoveryHandler, old_state map[ha_discovery.Topic]string, p *publishStatePersistent, start_fast_poll bool) (time.Duration, error) {
 	start := time.Now()
 	s := settings.Get()
 
@@ -281,12 +302,12 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 	}
 
 	if state["status"] == "online" {
-		*onlineHysteresis = 3
+		p.online_hysteresis = 3
 	} else {
-		*onlineHysteresis = max(*onlineHysteresis-1, 0)
+		p.online_hysteresis = max(p.online_hysteresis-1, 0)
 		// Keep online
-		if *onlineHysteresis > 0 {
-			log.Debug("Device going offline", "handler", disc.ClientId, "hysteresis", *onlineHysteresis)
+		if p.online_hysteresis > 0 {
+			log.Debug("Device going offline", "handler", disc.ClientId, "hysteresis", p.online_hysteresis)
 			skip_publish = true
 			poll_interval = time.Duration(1) * time.Second // Retry quickly when going offline
 		}
@@ -297,6 +318,8 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 			// If new state is different from old state, publish
 			if new_state, ok := state[topic]; ok {
 				if new_state != old_state[topic] {
+					start_fast_poll = start_fast_poll || isFastPollEvent(access_path, new_state)
+
 					if disc.ClientId != s.MqttPrefix {
 						log.Info("Publishing", "topic", topic, "access path", access_path, "state", new_state, "old_state", old_state[topic])
 					}
@@ -326,6 +349,37 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 		log.Debug("Failed to get state", "error", err)
 		return poll_interval, err
 	}
+
+	// Process fast polling
+	if disc.ClientId != s.MqttPrefix {
+		if start_fast_poll {
+			if p.fast_poll_start_time.IsZero() {
+				log.Debug("Starting fast poll", "handler", disc.ClientId)
+			} else {
+				log.Debug("Extending fast poll", "handler", disc.ClientId)
+			}
+
+			p.fast_poll_interval = 0
+			p.fast_poll_start_time = time.Now()
+			return 0, nil
+		} else if !p.fast_poll_start_time.IsZero() {
+			if time.Since(p.fast_poll_start_time) > time.Duration(s.FastPollTime)*time.Second {
+				log.Debug("Stopping fast poll", "handler", disc.ClientId)
+				p.fast_poll_interval = 0
+				p.fast_poll_start_time = time.Time{}
+			} else {
+				// Slowly increase the poll interval
+				w := 0.97
+				a := w * float64(p.fast_poll_interval)
+				b := (1 - w) * float64(poll_interval)
+				p.fast_poll_interval = time.Duration(a + b)
+				log.Debug("Fast poll interval", "handler", disc.ClientId, "interval", p.fast_poll_interval)
+
+				return p.fast_poll_interval, nil
+			}
+		}
+	}
+
 	return poll_interval - time.Since(start), nil
 }
 
@@ -392,7 +446,8 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 	// Publish loop
 	go func() {
 		old_state := make(map[ha_discovery.Topic]string)
-		onlineHysteresis := 0
+		persistent := publishStatePersistent{}
+		start_fast_poll := false
 	start_publish:
 		for {
 			publishCtx, cancel := context.WithCancel(ctx)
@@ -404,7 +459,8 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 					old_state = make(map[ha_discovery.Topic]string)
 					clear_old_state_request = false
 				}
-				to_wait, err := publishState(publishCtx, disc.Vin, http_client, mqtt_client, disc, old_state, &onlineHysteresis)
+				to_wait, err := publishState(publishCtx, disc.Vin, http_client, mqtt_client, disc, old_state, &persistent, start_fast_poll)
+				start_fast_poll = false
 				if err != nil && err != publishCtx.Err() {
 					log.Error("Failed to publish state", "error", err)
 					publishError(mqtt_client, disc.Vin, err)
@@ -435,6 +491,7 @@ func Run(ctx context.Context, wg *sync.WaitGroup, disc *discovery.DiscoveryHandl
 							return
 						case <-cancel_get_state_ch:
 							log.Debug("Resuming publish", "handler", disc.ClientId)
+							start_fast_poll = true // Start fast poll since a command interrupted the publish
 							continue start_publish
 						}
 					} else {
