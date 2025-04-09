@@ -390,6 +390,25 @@ devices:
         __get_state: "body_controller_state.user_presence"
 
     # Diagnostic
+      charging_state:
+        unique_id: "`vin`_charging_state"
+        platform: sensor
+        name: Charging state
+        state_topic: "`mqtt_prefix`/`vin`/charging_state/state"
+        value_template: >-
+          {% set values = {
+            'Unknown': 'Unknown',
+            'Disconnected':'Disconnected',
+            'NoPower': 'No power',
+            'Starting':'Starting',
+            'Charging':'Charging',
+            'Complete':'Complete',
+            'Stopped':'Stopped',
+            'Calibrating':'Calibrating'
+          } %}
+          {{ values[value] if value in values else none }}
+        icon: mdi:lightning-bolt
+        __get_state: "vehicle_data.charge_state.charging_state"
       # Charge cable connected
       # Charge cable type
       # Charge rate
