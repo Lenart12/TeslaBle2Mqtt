@@ -71,7 +71,7 @@ func parseSettings(settings *Settings) {
 	}})
 	poll_interval := parser.Int("i", "poll-interval", &argparse.Options{Required: false, Help: "Poll interval in seconds", Default: 90})
 	poll_interval_charging := parser.Int("I", "poll-interval-charging", &argparse.Options{Required: false, Help: "Poll interval in seconds when charging", Default: 20})
-	poll_interval_disconnected := parser.Int("D", "poll-interval-disconnected", &argparse.Options{Required: false, Help: "Poll interval in seconds when disconnected", Default: 10})
+	poll_interval_disconnected := parser.Int("o", "poll-interval-disconnected", &argparse.Options{Required: false, Help: "Poll interval in seconds when disconnected", Default: 10})
 	fast_poll_time := parser.Int("f", "fast-poll-time", &argparse.Options{Required: false, Help: "Period in seconds after discover, wakeup or command that polling is done without reduced interval", Default: 120})
 	max_charging_amps := parser.Int("A", "max-charging-amps", &argparse.Options{Required: false, Help: "Max charging amps", Default: 16, Validate: func(args []string) error {
 		amps, err := strconv.Atoi(args[0])
