@@ -11,27 +11,28 @@ import (
 )
 
 type Settings struct {
-	Vins                 []string
-	ProxyHost            string
-	PollInterval         int
-	PollIntervalCharging int
-	FastPollTime         int
-	MaxChargingAmps      int
-	MqttHost             string
-	MqttPort             int
-	MqttUser             string
-	MqttPass             string
-	MqttQos              byte
-	DiscoveryPrefix      string
-	MqttPrefix           string
-	ResetDiscovery       bool
-	SensorsYaml          string
-	LogLevel             string
-	MqttDebug            bool
-	ReportedVersion      string
-	ReportedConfigUrl    string
-	ForceAnsiColor       bool
-	LogPrefix            string
+	Vins                     []string
+	ProxyHost                string
+	PollInterval             int
+	PollIntervalCharging     int
+	PollIntervalDisconnected int
+	FastPollTime             int
+	MaxChargingAmps          int
+	MqttHost                 string
+	MqttPort                 int
+	MqttUser                 string
+	MqttPass                 string
+	MqttQos                  byte
+	DiscoveryPrefix          string
+	MqttPrefix               string
+	ResetDiscovery           bool
+	SensorsYaml              string
+	LogLevel                 string
+	MqttDebug                bool
+	ReportedVersion          string
+	ReportedConfigUrl        string
+	ForceAnsiColor           bool
+	LogPrefix                string
 }
 
 var settings *Settings
@@ -70,6 +71,7 @@ func parseSettings(settings *Settings) {
 	}})
 	poll_interval := parser.Int("i", "poll-interval", &argparse.Options{Required: false, Help: "Poll interval in seconds", Default: 90})
 	poll_interval_charging := parser.Int("I", "poll-interval-charging", &argparse.Options{Required: false, Help: "Poll interval in seconds when charging", Default: 20})
+	poll_interval_disconnected := parser.Int("D", "poll-interval-disconnected", &argparse.Options{Required: false, Help: "Poll interval in seconds when disconnected", Default: 10})
 	fast_poll_time := parser.Int("f", "fast-poll-time", &argparse.Options{Required: false, Help: "Period in seconds after discover, wakeup or command that polling is done without reduced interval", Default: 120})
 	max_charging_amps := parser.Int("A", "max-charging-amps", &argparse.Options{Required: false, Help: "Max charging amps", Default: 16, Validate: func(args []string) error {
 		amps, err := strconv.Atoi(args[0])
@@ -122,6 +124,7 @@ func parseSettings(settings *Settings) {
 	settings.ProxyHost = *proxy_host
 	settings.PollInterval = *poll_interval
 	settings.PollIntervalCharging = *poll_interval_charging
+	settings.PollIntervalDisconnected = *poll_interval_disconnected
 	settings.FastPollTime = *fast_poll_time
 	settings.MaxChargingAmps = *max_charging_amps
 	settings.MqttHost = *mqtt_host

@@ -310,6 +310,8 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 			log.Debug("Device going offline", "handler", disc.ClientId, "hysteresis", p.online_hysteresis)
 			skip_publish = true
 			poll_interval = time.Duration(1) * time.Second // Retry quickly when going offline
+		} else {
+			poll_interval = time.Duration(s.PollIntervalDisconnected) * time.Second
 		}
 	}
 
