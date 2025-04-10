@@ -345,39 +345,43 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 				log.Error("Failed to parse poll_interval", "error", err)
 			}
 		}
+
+		// Process fast polling
+		if disc.ClientId != s.MqttPrefix && s.FastPollTime > 0 {
+			if start_fast_poll {
+				if p.fast_poll_start_time.IsZero() {
+					log.Debug("Starting fast poll", "handler", disc.ClientId)
+				} else {
+					log.Debug("Extending fast poll", "handler", disc.ClientId)
+				}
+
+				p.fast_poll_interval = 0
+				p.fast_poll_start_time = time.Now()
+				return 0, nil
+			} else if !p.fast_poll_start_time.IsZero() {
+				if time.Since(p.fast_poll_start_time) > time.Duration(s.FastPollTime)*time.Second {
+					log.Debug("Stopping fast poll", "handler", disc.ClientId)
+					p.fast_poll_interval = 0
+					p.fast_poll_start_time = time.Time{}
+				} else {
+					if time.Since(p.fast_poll_start_time) < time.Duration(s.FastPollTime/2)*time.Second {
+						// First half of fast poll time, we will poll every second
+						return time.Duration(1) * time.Second, nil
+					} else {
+						// Second half of fast poll time, we will slowly increase the poll interval
+						w := 0.97
+						a := w * float64(p.fast_poll_interval)
+						b := (1 - w) * float64(poll_interval)
+						p.fast_poll_interval = time.Duration(a + b)
+
+						return p.fast_poll_interval, nil
+					}
+				}
+			}
+		}
 	} else if err != nil {
 		log.Debug("Failed to get state", "error", err)
 		return poll_interval, err
-	}
-
-	// Process fast polling
-	if disc.ClientId != s.MqttPrefix {
-		if start_fast_poll {
-			if p.fast_poll_start_time.IsZero() {
-				log.Debug("Starting fast poll", "handler", disc.ClientId)
-			} else {
-				log.Debug("Extending fast poll", "handler", disc.ClientId)
-			}
-
-			p.fast_poll_interval = 0
-			p.fast_poll_start_time = time.Now()
-			return 0, nil
-		} else if !p.fast_poll_start_time.IsZero() {
-			if time.Since(p.fast_poll_start_time) > time.Duration(s.FastPollTime)*time.Second {
-				log.Debug("Stopping fast poll", "handler", disc.ClientId)
-				p.fast_poll_interval = 0
-				p.fast_poll_start_time = time.Time{}
-			} else {
-				// Slowly increase the poll interval
-				w := 0.97
-				a := w * float64(p.fast_poll_interval)
-				b := (1 - w) * float64(poll_interval)
-				p.fast_poll_interval = time.Duration(a + b)
-				log.Debug("Fast poll interval", "handler", disc.ClientId, "interval", p.fast_poll_interval)
-
-				return p.fast_poll_interval, nil
-			}
-		}
 	}
 
 	return poll_interval - time.Since(start), nil
