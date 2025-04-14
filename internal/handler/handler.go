@@ -293,7 +293,6 @@ func publishState(ctx context.Context, vin string, http_client *http.Client, mqt
 			err = nil
 		} else {
 			if ctx.Err() != nil {
-				log.Warn("Timed out getting state", "handler", disc.ClientId)
 				return poll_interval, ctx.Err()
 			}
 			log.Warn("Failed to get state", "handler", disc.ClientId, "error", err)
