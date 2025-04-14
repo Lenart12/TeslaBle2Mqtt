@@ -107,7 +107,7 @@ services:
         #     network_mode: host, cap_add: NET_ADMIN
         #
         #   * # If you plan to use the same adapter for other things, use the following commit:
-        #     BlueZ adapter: dd527720bd0221f28dbc19e98e11c499e5836f06 
+        #     BlueZ adapter: f14024081d75fbccdda858edb1eae64596d0dafb 
         #
         # For more information see raw HCI section here:
         #     https://github.com/Lenart12/TeslaBle2Mqtt-addon/blob/main/TeslaBle2Mqtt/DOCS.md#raw-hci
