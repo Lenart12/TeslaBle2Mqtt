@@ -48,7 +48,7 @@ it easy to see when things go wrong.
 > [!WARNING]
 > Until [wimaha/TeslaBleHttpProxy#95](https://github.com/wimaha/TeslaBleHttpProxy/pull/95) gets merged, it is expected to
 > use my fork of TeslaBleHttpProxy, which you can get [here](https://github.com/Lenart12/TeslaBleHttpProxy) and then build it
-> manually as I can't create releases.
+> manually as I can't create releases. See [Installation](#option-2-docker-compose) for more information.
 
 ## Installation
 
@@ -102,7 +102,7 @@ services:
         # Replace <TBHP-COMMIT> in the following line with the commit hash you want to use:
         #
         #   * # Better if you have a BT adapter and plan to  use it *only* for TeslaBleHttpProxy
-        #     Raw hci adapter: 1d2c37e9444ffb81b24c773131f11f448371aba1
+        #     Raw hci adapter: 980553e83cc07f6e204999ac0610e181c3fe3ce6
         #     # If you use this commit, you may also need to add certain privileges to the container:
         #     network_mode: host, cap_add: NET_ADMIN
         #
