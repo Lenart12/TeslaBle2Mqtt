@@ -46,9 +46,8 @@ it easy to see when things go wrong.
 - Home assistant with mqtt integration (Optional if you do not care about displaying values)
 
 > [!WARNING]
-> Until [wimaha/TeslaBleHttpProxy#95](https://github.com/wimaha/TeslaBleHttpProxy/pull/95) gets merged, it is expected to
-> use my fork of TeslaBleHttpProxy, which you can get [here](https://github.com/Lenart12/TeslaBleHttpProxy) and then build it
-> manually as I can't create releases. See [Installation](#option-2-docker-compose) for more information.
+> It is expected to use my fork of TeslaBleHttpProxy, which you can get [here](https://github.com/Lenart12/TeslaBleHttpProxy)
+> See [Installation](#option-2-docker-compose) for more information.
 
 ## Installation
 
@@ -78,59 +77,72 @@ services:
     image: ghcr.io/lenart12/teslable2mqtt:latest
     container_name: teslable2mqtt
     restart: unless-stopped
-    network_mode: host
     command:
-      - "--proxy-host=http://teslablehttpproxy:8080"
-      - "--mqtt-host=localhost"
-      - "--mqtt-user=your_username"
-      - "--mqtt-pass=your_password"
-      - "--vin=YOUR_TESLA_VIN"
-      - "--log-level=info"
-      - "--force-ansi-color"
+      - "--vin=YOUR_TESLA_VIN" # VIN of the Tesla vehicle
+      - "--proxy-host=http://teslablehttpproxy:8080" # URL to the TeslaBleHttpProxy
+      - "--mqtt-host=your_host" # MQTT host (if localhost, see note below)
+      - "--mqtt-user=your_username" # MQTT username
+      - "--mqtt-pass=your_password" # MQTT password
+      - "--reset-discovery" # Reset MQTT discovery
+      # - "--log-level=INFO" # Log level (INFO, DEBUG, WARN, ERROR, FATAL)
+      # - "--poll-interval=90" # Poll interval in seconds
+      # - "--poll-interval-charging=20" # Poll interval in seconds when charging
+      # - "--fast-poll-time=120" # Period in seconds after discover, wakeup or command that polling is done without reduced interval
+      # - "--max-charging-amps=16" # Max charging amps
+      # - "--mqtt-port=1883" # MQTT port
+      # - "--mqtt-qos=0" # MQTT QoS
+      # - "--reported-version=dev" # Version of this application, reported via Mqtt
+      - "--force-ansi-color" # Force ANSI color output
+      # - "--log-prefix=" # Log prefix
+
   teslablehttpproxy:
-    build:
-      # Use Lenart12/TeslaBleHttpProxy until the PR gets merged
-      # https://github.com/wimaha/TeslaBleHttpProxy/pull/95
-      context: .
-      dockerfile_inline: |
-        FROM golang:1.23-alpine AS builder
-        RUN apk add --no-cache git
-        WORKDIR /build
-        ##################################
-        #
-        # Read here!!!
-        # Replace <TBHP-COMMIT> in the following line with the commit hash you want to use:
-        #
-        #   * # Better if you have a BT adapter and plan to  use it *only* for TeslaBleHttpProxy
-        #     Raw hci adapter: 980553e83cc07f6e204999ac0610e181c3fe3ce6
-        #     # If you use this commit, you may also need to add certain privileges to the container:
-        #     network_mode: host, cap_add: NET_ADMIN
-        #
-        #   * # If you plan to use the same adapter for other things, use the following commit:
-        #     BlueZ adapter: f14024081d75fbccdda858edb1eae64596d0dafb 
-        #
-        # For more information see raw HCI section here:
-        #     https://github.com/Lenart12/TeslaBle2Mqtt-addon/blob/main/TeslaBle2Mqtt/DOCS.md#raw-hci
-        #
-        ##################################
-        RUN git clone https://github.com/Lenart12/TeslaBleHttpProxy.git . && \
-            git checkout <TBHP-COMMIT> && \ 
-            go build -o teslablehttpproxy
-        FROM alpine:latest
-        COPY --from=builder /build/teslablehttpproxy /usr/local/bin/
-        EXPOSE 8080
-        ENTRYPOINT ["teslablehttpproxy"]
+    ##################################
+    #
+    # Read here!!!
+    # Uncomment the following line with the version you want to use:
+    #
+    #   * latest (Exclusive ownership of the BT adapter)
+    #     Better if you have a BT adapter and plan to  use it *only* for TeslaBleHttpProxy
+    #     # If you use this version, you also need to add certain privileges to the container:
+    #     network_mode: host,
+    #     cap_add: NET_ADMIN
+    #
+    #   * latest-bluez (Using the Linux BlueZ stack)
+    #     If you plan to use the same adapter for other applications.
+    #     If you use this version, you also need to mount dbus socket:
+    #     volumes:
+    #      - /var/run/dbus:/var/run/dbus
+    #
+    #     You can switch between the two versions if you are experiencing issues with one of them.
+    #
+    # For more information see raw HCI section here:
+    #     https://github.com/Lenart12/TeslaBle2Mqtt-addon/blob/main/TeslaBle2Mqtt/DOCS.md#raw-hci
+    #
+    ##################################
+
+    # image: ghcr.io/lenart12/teslablehttpproxy:latest
+    # image: ghcr.io/lenart12/teslablehttpproxy:latest-bluez
     container_name: teslablehttpproxy
     restart: unless-stopped
     command:
-      - "--keys=/key"
-      - "--cacheMaxAge=5"
-      - "--logLevel=info"
+      - "--keys=/key" # Path to public and private keys, /key is default mount point
+      # - "--logLevel=INFO" # DEBUG, INFO, WARN, ERROR, FATAL
+      # - "--httpListenAddress=:8080"
+      # - "--scanTimeout=1" # Time in seconds to scan for BLE beacons during device scan (0 = max)
+      # - "--cacheMaxAge=5" # Time in seconds for Cache-Control header (0 = no cache)
+      # - "--btAdapter=hci0" # Bluetooth adapter ID to use ("hciX"). Default: hci0
     ports:
       - "8080:8080"
+
+    # Uncomment the following lines if you are using "latest" version
+    # cap_add:
+    #   - NET_ADMIN
+    # network_mode: host
+
     volumes:
       - /path/to/your/keys:/key
-      - /var/run/dbus:/var/run/dbus
+      # - Uncomment the following line if you are using "latest-bluez" version
+      # - /var/run/dbus:/var/run/dbus
 ```
 
 2. Start the containers:

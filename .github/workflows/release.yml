@@ -23,9 +23,10 @@ jobs:
 
       - name: Build binaries
         run: |
-          GOOS=linux GOARCH=amd64 go build -o dist/TeslaBle2Mqtt-linux-amd64
-          GOOS=linux GOARCH=arm64 go build -o dist/TeslaBle2Mqtt-linux-arm64
-          GOOS=linux GOARCH=arm GOARM=7 go build -o dist/TeslaBle2Mqtt-linux-armv7
+          GOOS=linux GOARCH=amd64 go build -o dist/TeslaBle2Mqtt-linux-amd64 -ldflags '-s -w' -trimpath
+          GOOS=linux GOARCH=arm64 go build -o dist/TeslaBle2Mqtt-linux-arm64 -ldflags '-s -w' -trimpath
+          GOOS=linux GOARCH=arm GOARM=7 go build -o dist/TeslaBle2Mqtt-linux-armv7 -ldflags '-s -w' -trimpath
+          GOOS=linux GOARCH=arm GOARM=6 go build -o dist/TeslaBle2Mqtt-linux-armv6 -ldflags '-s -w' -trimpath
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
