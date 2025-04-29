@@ -15,9 +15,10 @@ RUN case "$TARGETPLATFORM" in \
     "linux/amd64") GOARCH=amd64 ;; \
     "linux/arm64") GOARCH=arm64 ;; \
     "linux/arm/v7") GOARCH=arm GOARM=7 ;; \
+    "linux/arm/v6") GOARCH=arm GOARM=6 ;; \
     *) echo "Unsupported platform: $TARGETPLATFORM" && exit 1 ;; \
     esac && \
-    GOOS=linux CGO_ENABLED=0 GOARCH=$GOARCH GOARM=$GOARM go build -o teslable2mqtt
+    GOOS=linux CGO_ENABLED=0 GOARCH=$GOARCH GOARM=$GOARM go build -o teslable2mqtt -ldflags="-s -w" -trimpath
 
 FROM alpine:latest
 
